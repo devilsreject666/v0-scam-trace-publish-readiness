@@ -4,9 +4,10 @@ import { Disclaimer } from './Disclaimer';
 interface FooterProps {
   onOpenPrivacy?: () => void;
   onOpenTerms?: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-export function Footer({ onOpenPrivacy, onOpenTerms }: FooterProps) {
+export function Footer({ onOpenPrivacy, onOpenTerms, onNavigate }: FooterProps) {
   return (
     <footer className="border-t border-white/5 bg-dark-900">
       {/* CTA Banner */}
@@ -113,8 +114,16 @@ export function Footer({ onOpenPrivacy, onOpenTerms }: FooterProps) {
             <h4 className="text-sm font-semibold text-white">Company</h4>
             <ul className="mt-4 space-y-2.5">
               <li><a href="#" className="text-sm text-slate-400 transition hover:text-cyber-green">About Us</a></li>
-              <li><a href="#" className="text-sm text-slate-400 transition hover:text-cyber-green">Careers</a></li>
-              <li><a href="#" className="text-sm text-slate-400 transition hover:text-cyber-green">Contact</a></li>
+              <li>
+                <button onClick={() => onNavigate?.('law-enforcement')} className="text-sm text-slate-400 transition hover:text-cyber-green text-left">
+                  Law Enforcement
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate?.('compliance')} className="text-sm text-slate-400 transition hover:text-cyber-green text-left">
+                  Security & Compliance
+                </button>
+              </li>
               <li>
                 <button onClick={onOpenPrivacy} className="text-sm text-slate-400 transition hover:text-cyber-green text-left">
                   Privacy Policy
@@ -125,7 +134,7 @@ export function Footer({ onOpenPrivacy, onOpenTerms }: FooterProps) {
                   Terms of Service
                 </button>
               </li>
-              <li><a href="#" className="text-sm text-slate-400 transition hover:text-cyber-green">Security & SOC 2</a></li>
+              <li><a href="mailto:contact@scamtrace.com" className="text-sm text-slate-400 transition hover:text-cyber-green">Contact</a></li>
             </ul>
           </div>
         </div>

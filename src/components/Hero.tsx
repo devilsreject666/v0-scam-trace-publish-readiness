@@ -189,9 +189,9 @@ export function Hero({ onGetStarted }: { onGetStarted?: () => void }) {
 
         {/* Trusted by section */}
         <div className="mt-20 text-center w-full animate-fade-in-up opacity-0 delay-600" style={{ animationFillMode: 'forwards' }}>
-          <p className="text-xs text-slate-500 uppercase tracking-widest mb-6">Trusted by investigators & fraud prevention teams</p>
+          <p className="text-xs text-slate-500 uppercase tracking-widest mb-6">Built for investigators & fraud prevention teams</p>
           <div className="flex flex-wrap items-center justify-center gap-8 opacity-40">
-            {['FBI Cyber Division', 'Interpol', 'SEC Enforcement', 'Europol EC3', 'IRS-CI'].map(org => (
+            {['Fraud Teams', 'Compliance Depts', 'Victim Advocates', 'Legal Counsel', 'Forensic Analysts'].map(org => (
               <div key={org} className="text-sm font-bold text-slate-400 tracking-wider uppercase">{org}</div>
             ))}
           </div>
