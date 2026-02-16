@@ -1,10 +1,12 @@
 import { Check, Zap, Shield, Crown, Star, Lock, CreditCard, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { Disclaimer } from './Disclaimer';
+import { StripeCheckout } from './StripeCheckout';
 
 const plans = [
   {
     name: 'Free',
+    productId: 'free',
     icon: Shield,
     monthlyPrice: 0,
     yearlyPrice: 0,
@@ -21,6 +23,7 @@ const plans = [
   },
   {
     name: 'Starter',
+    productId: 'starter',
     icon: Zap,
     monthlyPrice: 9,
     yearlyPrice: 7,
@@ -40,6 +43,7 @@ const plans = [
   },
   {
     name: 'Pro',
+    productId: 'pro',
     icon: Star,
     monthlyPrice: 19,
     yearlyPrice: 15,
@@ -62,6 +66,7 @@ const plans = [
   },
   {
     name: 'Investigator',
+    productId: 'investigator',
     icon: Crown,
     monthlyPrice: 49,
     yearlyPrice: 39,
@@ -86,8 +91,24 @@ const plans = [
   },
 ];
 
-export function Pricing({ onSelectPlan }: { onSelectPlan?: () => void }) {
+interface PricingProps {
+  onSelectPlan?: () => void;
+}
+
+export function Pricing({ onSelectPlan }: PricingProps) {
   const [yearly, setYearly] = useState(true);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ productId: string; name: string } | null>(null);
+
+  const handleSelectPlan = (plan: typeof plans[0]) => {
+    if (plan.productId === 'free') {
+      // Free plan just signs up
+      onSelectPlan?.();
+      return;
+    }
+    setSelectedPlan({ productId: plan.productId, name: plan.name });
+    setCheckoutOpen(true);
+  };
 
   return (
     <section id="pricing" className="relative py-24 grid-bg">
@@ -123,7 +144,7 @@ export function Pricing({ onSelectPlan }: { onSelectPlan?: () => void }) {
               }`}
               onClick={() => setYearly(true)}
             >
-              Yearly <span className="ml-1 rounded-full bg-dark-900/30 px-2 py-0.5 text-[10px] font-bold">−20%</span>
+              Yearly <span className="ml-1 rounded-full bg-dark-900/30 px-2 py-0.5 text-[10px] font-bold">{'−20%'}</span>
             </button>
           </div>
         </div>
@@ -137,7 +158,7 @@ export function Pricing({ onSelectPlan }: { onSelectPlan?: () => void }) {
             >
               {plan.popular && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-cyber-green to-cyber-blue px-5 py-1.5 text-xs font-bold text-dark-900 shadow-lg shadow-cyber-green/20">
-                  ★ Most Popular
+                  {'★ Most Popular'}
                 </div>
               )}
 
@@ -178,7 +199,7 @@ export function Pricing({ onSelectPlan }: { onSelectPlan?: () => void }) {
               </ul>
 
               <button
-                onClick={onSelectPlan}
+                onClick={() => handleSelectPlan(plan)}
                 className={`w-full rounded-xl py-3 text-sm font-bold transition-all ${
                   plan.popular
                     ? 'btn-primary shadow-lg'
@@ -204,7 +225,7 @@ export function Pricing({ onSelectPlan }: { onSelectPlan?: () => void }) {
             </div>
             <div className="flex items-center gap-1.5">
               <Smartphone className="h-3.5 w-3.5" />
-              iOS & Android ready
+              {'iOS & Android ready'}
             </div>
             <div className="flex items-center gap-1.5">
               <Shield className="h-3.5 w-3.5" />
@@ -218,6 +239,20 @@ export function Pricing({ onSelectPlan }: { onSelectPlan?: () => void }) {
 
         <Disclaimer className="mt-12" />
       </div>
+
+      {/* Stripe Checkout Modal */}
+      {selectedPlan && (
+        <StripeCheckout
+          isOpen={checkoutOpen}
+          onClose={() => {
+            setCheckoutOpen(false);
+            setSelectedPlan(null);
+          }}
+          productId={selectedPlan.productId}
+          productName={selectedPlan.name}
+          yearly={yearly}
+        />
+      )}
     </section>
   );
 }
