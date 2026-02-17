@@ -3,42 +3,21 @@ import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  priceMonthly: number;
-  priceYearly: number;
-  mode: 'subscription';
-}
-
-// Server-side source of truth -- must match client catalog
-const PRODUCTS: Product[] = [
-  {
-    id: 'starter',
-    name: 'ScamTrace Starter',
-    description: 'Evidence templates & basic investigation tools',
-    priceMonthly: 900,
-    priceYearly: 700,
-    mode: 'subscription',
+// Map product IDs + billing cycle to real Stripe Price IDs
+const PRICE_MAP: Record<string, { monthly: string; yearly: string }> = {
+  starter: {
+    monthly: 'price_1T1e0NCZR1DeXKstixpC7eCV',
+    yearly: 'price_1T1e14CZR1DeXKstVLLCH5Xg',
   },
-  {
-    id: 'pro',
-    name: 'ScamTrace Pro',
-    description: 'Scam reports, monitoring dashboard & unlimited scans',
-    priceMonthly: 1900,
-    priceYearly: 1500,
-    mode: 'subscription',
+  pro: {
+    monthly: 'price_1T1fPbCZR1DeXKstdeUbDK6U',
+    yearly: 'price_1T1fQ6CZR1DeXKstrPV6Uctv',
   },
-  {
-    id: 'investigator',
-    name: 'ScamTrace Investigator',
-    description: 'Full investigation suite with OSINT, API access & dedicated support',
-    priceMonthly: 4900,
-    priceYearly: 3900,
-    mode: 'subscription',
+  investigator: {
+    monthly: 'price_1T1fQCCZR1DeXKstEQ35imFZ',
+    yearly: 'price_1T1fQICZR1DeXKstt7wFJ8N2',
   },
-];
+};
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -48,29 +27,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { productId, yearly } = req.body;
 
-    const product = PRODUCTS.find((p) => p.id === productId);
-    if (!product) {
+    const priceEntry = PRICE_MAP[productId];
+    if (!priceEntry) {
       return res.status(400).json({ error: `Product "${productId}" not found` });
     }
 
-    const unitAmount = yearly ? product.priceYearly : product.priceMonthly;
+    const priceId = yearly ? priceEntry.yearly : priceEntry.monthly;
 
     const session = await stripe.checkout.sessions.create({
       ui_mode: 'embedded',
       redirect_on_completion: 'never',
       line_items: [
         {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: product.name,
-              description: product.description,
-            },
-            unit_amount: unitAmount,
-            recurring: {
-              interval: yearly ? 'year' : 'month',
-            },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
