@@ -52,10 +52,10 @@ export function CaseStudies() {
             <span className="text-xs font-medium text-cyber-green">Anonymized Case Studies</span>
           </div>
           <h2 className="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
-            Real Investigations, <span className="gradient-text">Real Results</span>
+            Real Documentation, <span className="gradient-text">Real Investigations</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-400">
-            See how ScamTrace has been used to document and investigate real crypto fraud cases. All details anonymized to protect ongoing investigations.
+            See how ScamTrace has been used to document crypto fraud cases. All details are anonymized. Outcomes depend on jurisdiction, exchange policies, and cooperation of relevant parties.
           </p>
         </div>
 

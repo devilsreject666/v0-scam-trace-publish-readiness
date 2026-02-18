@@ -8,13 +8,8 @@ export function Disclaimer({ className = '' }: { className?: string }) {
         <span className="text-[10px] uppercase tracking-wider text-slate-600 font-medium">Legal Disclaimer</span>
       </div>
       <p>
-        ScamTrace provides transaction monitoring and forensic documentation tools.
-        We do not guarantee recovery of funds, prevent losses, or provide legal or financial advice.
-        Blockchain transactions are inherently irreversible.
-      </p>
-      <p className="mt-1.5">
-        Our services add time delays for reconsideration, generate evidence,
-        and provide reporting tools. We cannot guarantee that funds remain recoverable.
+        ScamTrace provides informational tools only. We do not offer financial, legal, or recovery services.
+        Blockchain transactions are irreversible. Use of this platform does not guarantee outcomes.
       </p>
     </div>
   );

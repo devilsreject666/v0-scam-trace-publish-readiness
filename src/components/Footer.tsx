@@ -16,10 +16,10 @@ export function Footer({ onOpenPrivacy, onOpenTerms, onNavigate }: FooterProps) 
           <div className="absolute inset-0 bg-gradient-to-r from-cyber-green/[0.03] via-transparent to-cyber-blue/[0.03]" />
           <div className="relative flex flex-col items-center text-center">
             <h3 className="text-2xl font-bold text-white sm:text-3xl">
-              Ready to start monitoring?
+              Start a Case
             </h3>
             <p className="mt-3 max-w-xl text-sm text-slate-400">
-              Join thousands of users documenting and reporting crypto fraud. Start with our free plan — no credit card required.
+              Create your first investigation in under 60 seconds. Document evidence, analyze transactions, and generate professional reports.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <a href="#tracker" className="btn-primary text-sm px-6 py-3 flex items-center gap-2">
@@ -46,8 +46,7 @@ export function Footer({ onOpenPrivacy, onOpenTerms, onNavigate }: FooterProps) 
               </span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
-              Transaction monitoring and forensic documentation platform for blockchain users.
-              Trace fund movements, generate evidence, and report fraud.
+              Blockchain forensic documentation platform for investigating cryptocurrency fraud. Documentation and analysis tools for victims, analysts, and investigators.
             </p>
 
             {/* Newsletter */}
@@ -134,7 +133,8 @@ export function Footer({ onOpenPrivacy, onOpenTerms, onNavigate }: FooterProps) 
                   Terms of Service
                 </button>
               </li>
-              <li><a href="mailto:contact@scamtrace.com" className="text-sm text-slate-400 transition hover:text-cyber-green">Contact</a></li>
+              <li><a href="mailto:support@scamtrace.store" className="text-sm text-slate-400 transition hover:text-cyber-green">Support</a></li>
+              <li><a href="mailto:contact@scamtrace.store" className="text-sm text-slate-400 transition hover:text-cyber-green">Business Inquiries</a></li>
             </ul>
           </div>
         </div>

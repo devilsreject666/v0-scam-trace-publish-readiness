@@ -75,10 +75,10 @@ export function Testimonials() {
             <span className="text-xs font-medium text-cyber-green">Trusted Worldwide</span>
           </div>
           <h2 className="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
-            Real Results From <span className="gradient-text">Real Investigators</span>
+            Real Results From <span className="gradient-text">Real Users</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-400">
-            See how fraud investigators, law enforcement, and scam victims use ScamTrace to recover stolen funds and build airtight cases.
+            See how fraud investigators, compliance teams, and scam victims use ScamTrace to document evidence and build professional case files.
           </p>
         </div>
 

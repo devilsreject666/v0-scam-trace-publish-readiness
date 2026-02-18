@@ -24,6 +24,7 @@ import { RequestDemo } from './components/RequestDemo';
 import { LawEnforcement } from './components/LawEnforcement';
 import { CompliancePage } from './components/CompliancePage';
 import { CaseDashboard } from './components/CaseDashboard';
+import { Transparency } from './components/Transparency';
 
 type Page = 'home' | 'law-enforcement' | 'compliance' | 'dashboard';
 
@@ -86,6 +87,7 @@ function AppContent() {
           <AdminDashboard />
           <Testimonials />
           <Pricing onSelectPlan={() => user ? navigate('dashboard') : openAuth('signup')} />
+          <Transparency />
           <FAQ />
         </main>
       )}

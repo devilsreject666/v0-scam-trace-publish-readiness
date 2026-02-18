@@ -6,14 +6,14 @@ const coreFeatures = [
     icon: Search,
     color: 'from-cyber-green to-emerald-400',
     glow: 'shadow-cyber-green/10',
-    title: 'Discover',
-    subtitle: 'Identify High-Risk Targets Instantly',
-    description: 'Surface critical leads in seconds with plain-language, AI-powered insights — no blockchain expertise required. Instantly triage any crypto address, domain, or phone number and highlight cross-chain links to illicit activity.',
+    title: 'Case Management',
+    subtitle: 'Organize Incidents Into Structured Cases',
+    description: 'Create and manage fraud cases with notes, evidence, and metadata. Keep all information organized in one place for each investigation you are working on.',
     bullets: [
-      'AI-powered risk scoring for any address',
-      'Cross-chain link detection (ETH, BTC, & more)',
-      'Domain WHOIS & phone number intelligence',
-      'Telegram/WhatsApp chat analysis',
+      'Structured case organization',
+      'Evidence attachment & metadata',
+      'Notes and investigation logs',
+      'Multi-case management',
     ],
   },
   {
@@ -21,14 +21,14 @@ const coreFeatures = [
     icon: GitBranch,
     color: 'from-cyber-blue to-blue-400',
     glow: 'shadow-cyber-blue/10',
-    title: 'Analyze',
-    subtitle: 'Trace Funds Across Chains in Real-Time',
-    description: 'Follow the money across blockchains including Bitcoin, Ethereum, and more. Navigate mixers (Tornado Cash, Wasabi CoinJoin), bridges, swaps, and smart contracts with automated analysis.',
+    title: 'Blockchain Analysis',
+    subtitle: 'Document Transaction Flows',
+    description: 'Input public transaction hashes and addresses to document fund flows. Analyze blockchain data to build a clear picture of how funds moved.',
     bullets: [
-      'Multi-chain tracing (BTC, ETH, Polygon, Arbitrum & more)',
-      'BTC CoinJoin & ETH mixer detection',
-      'Network visualization with UTXO flow',
-      'Entity identification & clustering',
+      'Public transaction documentation',
+      'Address and hash analysis',
+      'Fund flow visualization',
+      'Chronological event timelines',
     ],
   },
   {
@@ -36,14 +36,14 @@ const coreFeatures = [
     icon: Target,
     color: 'from-cyber-purple to-violet-400',
     glow: 'shadow-cyber-purple/10',
-    title: 'Pursue',
-    subtitle: 'Turn Intelligence Into Impact',
-    description: 'Strengthen cases and disrupt illicit activity. Auto-generate freeze-ready evidence packets with timestamped wallet graphs, transaction hashes, chat evidence, and user statements.',
+    title: 'Forensic Reports',
+    subtitle: 'Export Professional Documentation',
+    description: 'Generate professional forensic reports for legal or investigative use. All entries include timestamps and immutable logs to maintain data integrity.',
     bullets: [
-      'Freeze-ready evidence packets',
-      'Chat & OSINT evidence integration',
-      'Exchange contact automation',
-      'Court-admissible documentation',
+      'Professional PDF report export',
+      'Timestamped evidence logs',
+      'Immutable audit trails',
+      'Investigation-ready documentation',
     ],
   },
 ];
@@ -153,13 +153,13 @@ export function Features() {
         {/* Section header */}
         <div className="mb-20 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyber-blue/20 bg-cyber-blue/[0.06] px-4 py-1.5">
-            <span className="text-xs font-medium text-cyber-blue">Investigation Pipeline</span>
+            <span className="text-xs font-medium text-cyber-blue">What ScamTrace Does</span>
           </div>
           <h2 className="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
-            From Discovery to <span className="gradient-text">Documentation</span>
+            Structured Tools for <span className="gradient-text">Fraud Documentation</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-400">
-            A complete monitoring workflow that transforms raw blockchain data, chat evidence, and OSINT intelligence into actionable insights and documented evidence.
+            ScamTrace provides structured tools to create and manage fraud cases, analyze blockchain transactions, build evidence timelines, and export professional forensic reports. All data remains under your control.
           </p>
         </div>
 
@@ -199,9 +199,9 @@ export function Features() {
 
         {/* Tools grid */}
         <div className="mb-10 text-center">
-          <h3 className="text-2xl font-bold text-white sm:text-3xl">Powerful Tools at Your Fingertips</h3>
+          <h3 className="text-2xl font-bold text-white sm:text-3xl">Core Features</h3>
           <p className="mx-auto mt-3 max-w-xl text-slate-400">
-            Every tool you need to investigate, track, and build cases against crypto fraud — including chat analysis, domain checking, and phone lookup.
+            Documentation and analysis tools for investigating crypto fraud -- from evidence collection to report generation.
           </p>
         </div>
 

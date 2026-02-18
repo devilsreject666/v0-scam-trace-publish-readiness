@@ -90,38 +90,43 @@ export function Hero({ onGetStarted }: { onGetStarted?: () => void }) {
         {/* Badge */}
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyber-green/20 bg-cyber-green/[0.06] px-5 py-2 animate-fade-in-up">
           <div className="h-2 w-2 rounded-full bg-cyber-green animate-pulse" />
-          <span className="text-xs font-semibold text-cyber-green tracking-wide uppercase">Live Monitoring Active</span>
+          <span className="text-xs font-semibold text-cyber-green tracking-wide uppercase">Crypto Scam Intelligence Platform</span>
         </div>
 
         <h1 className="max-w-5xl text-center text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl animate-fade-in-up text-balance">
-          <span className="block">Trace Every Coin.</span>
-          <span className="block gradient-text mt-2">Expose Every Scam.</span>
+          <span className="block">Document. Analyze.</span>
+          <span className="block gradient-text mt-2">Preserve.</span>
         </h1>
 
         <p className="mt-6 max-w-2xl text-center text-lg text-slate-400 sm:text-xl animate-fade-in-up opacity-0 delay-200" style={{ animationFillMode: 'forwards' }}>
-          AI-powered transaction monitoring and forensic documentation. Trace fund movements across chains,
-          identify mixer & bridge activity, and auto-generate evidence packets — no blockchain expertise required.
+          ScamTrace is a blockchain forensic documentation platform for investigating cryptocurrency fraud.
+          We help victims, analysts, and investigators organize evidence, analyze transactions, and generate professional reports.
         </p>
+
+        {/* Honest disclaimer */}
+        <div className="mt-4 max-w-xl text-center text-xs text-slate-500 animate-fade-in-up opacity-0 delay-200" style={{ animationFillMode: 'forwards' }}>
+          ScamTrace does not guarantee recovery of funds. We provide documentation and analysis tools only.
+        </div>
 
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row animate-fade-in-up opacity-0 delay-300" style={{ animationFillMode: 'forwards' }}>
           <button onClick={onGetStarted}
             className="group flex items-center gap-2 btn-primary text-base cursor-pointer">
             <Play className="h-4 w-4" />
-            Start Tracing Now
+            Start a Case
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
           </button>
           <a href="#features" className="btn-secondary text-base flex items-center gap-2">
-            See How It Works
+            See What We Do
           </a>
         </div>
 
         {/* Trust indicators */}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 animate-fade-in-up opacity-0 delay-400" style={{ animationFillMode: 'forwards' }}>
           {[
-            'SOC 2 Compliant',
-            'GDPR Ready',
-            'End-to-End Encrypted',
-            'Offline Wallet Scan',
+            'Data Under Your Control',
+            'Timestamped Evidence Logs',
+            'Professional Report Export',
+            'No False Promises',
           ].map(badge => (
             <div key={badge} className="flex items-center gap-1.5 text-xs text-slate-500">
               <CheckCircle2 className="h-3.5 w-3.5 text-cyber-green/60" />
@@ -189,9 +194,9 @@ export function Hero({ onGetStarted }: { onGetStarted?: () => void }) {
 
         {/* Trusted by section */}
         <div className="mt-20 text-center w-full animate-fade-in-up opacity-0 delay-600" style={{ animationFillMode: 'forwards' }}>
-          <p className="text-xs text-slate-500 uppercase tracking-widest mb-6">Built for investigators & fraud prevention teams</p>
+          <p className="text-xs text-slate-500 uppercase tracking-widest mb-6">Who It's For</p>
           <div className="flex flex-wrap items-center justify-center gap-8 opacity-40">
-            {['Fraud Teams', 'Compliance Depts', 'Victim Advocates', 'Legal Counsel', 'Forensic Analysts'].map(org => (
+            {['Crypto Scam Victims', 'Private Investigators', 'Compliance Professionals', 'Journalists & Researchers', 'Law Enforcement Analysts'].map(org => (
               <div key={org} className="text-sm font-bold text-slate-400 tracking-wider uppercase">{org}</div>
             ))}
           </div>
