@@ -38,7 +38,7 @@ const plans = [
       '1 phone lookup per day',
       'Email support',
     ],
-    cta: 'Start 14-Day Free Trial',
+    cta: 'Start 3-Day Free Trial',
     popular: false,
   },
   {
@@ -61,7 +61,7 @@ const plans = [
       'Evidence exports',
       'Priority support',
     ],
-    cta: 'Start 14-Day Free Trial',
+    cta: 'Start 3-Day Free Trial',
     popular: true,
   },
   {
@@ -233,7 +233,7 @@ export function Pricing({ onSelectPlan }: PricingProps) {
             </div>
           </div>
           <p className="text-center text-xs text-slate-600 max-w-lg">
-            All plans include a 14-day free trial. Subscriptions managed through Stripe.
+            All plans include a 3-day free trial. Subscriptions managed through Stripe.
           </p>
         </div>
 

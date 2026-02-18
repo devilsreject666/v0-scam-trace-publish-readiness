@@ -44,7 +44,7 @@ const faqs = [
   },
   {
     q: 'How does the subscription work? Can I cancel anytime?',
-    a: 'All plans come with a 14-day free trial — no credit card required. Subscriptions are managed through Stripe and can be cancelled anytime. The app is available on iOS and Android. Yearly plans save 20% compared to monthly billing.',
+    a: 'All plans come with a 3-day free trial — no credit card required. Subscriptions are managed through Stripe and can be cancelled anytime. The app is available on iOS and Android. Yearly plans save 20% compared to monthly billing.',
   },
   {
     q: 'What happens when exchange deposits are detected?',
