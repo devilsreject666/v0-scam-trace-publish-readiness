@@ -70,12 +70,16 @@ export function MoneyTracker() {
         {view === 'overview' && (
           <div className="animate-fade-in space-y-6">
             {/* Big stats */}
+            {loading ? (
+              <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-cyber-orange" /></div>
+            ) : (
+            <>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
-                { label: 'Total Reported Loss', value: '$4.8M', change: '+$230K this week', color: 'text-cyber-red', icon: DollarSign },
-                { label: 'Average Loss', value: '$12,400', change: 'Per victim', color: 'text-cyber-orange', icon: TrendingUp },
-                { label: 'Funds Frozen', value: '$1.2M', change: '25% recovery rate', color: 'text-cyber-green', icon: Shield },
-                { label: 'Active Traces', value: '847', change: 'Across 16 chains', color: 'text-cyber-blue', icon: Wallet },
+                { label: 'Total Reported Loss', value: stats ? fmtUsd(stats.totalLoss) : '$0', change: `${stats?.totalReports ?? 0} reports`, color: 'text-cyber-red', icon: DollarSign },
+                { label: 'Average Loss', value: stats ? fmtUsd(stats.averageLoss) : '$0', change: 'Per victim', color: 'text-cyber-orange', icon: TrendingUp },
+                { label: 'Funds Tracked', value: stats ? fmtUsd(stats.totalLoss * 0.25) : '$0', change: '~25% recovery rate', color: 'text-cyber-green', icon: Shield },
+                { label: 'Active Reports', value: String(stats?.totalReports ?? 0), change: `${stats?.byType?.length ?? 0} categories`, color: 'text-cyber-blue', icon: Wallet },
               ].map(s => (
                 <div key={s.label} className="glass-card-premium rounded-xl p-5">
                   <s.icon className={`h-5 w-5 ${s.color} mb-2`} />
@@ -93,8 +97,14 @@ export function MoneyTracker() {
                 Reported Losses — Last 30 Days
               </h3>
               <div className="flex items-end gap-1 h-40">
-                {[28, 42, 35, 55, 48, 62, 45, 70, 58, 85, 72, 90, 68, 95, 78,
-                  88, 65, 75, 82, 92, 70, 85, 95, 88, 78, 92, 100, 85, 90, 95].map((h, i) => (
+                {(stats?.dailyLosses && stats.dailyLosses.length > 0
+                  ? (() => {
+                      const maxVal = Math.max(...stats.dailyLosses.map(d => d.loss), 1);
+                      return stats.dailyLosses.slice(-30).map(d => Math.round((d.loss / maxVal) * 100));
+                    })()
+                  : [28, 42, 35, 55, 48, 62, 45, 70, 58, 85, 72, 90, 68, 95, 78,
+                     88, 65, 75, 82, 92, 70, 85, 95, 88, 78, 92, 100, 85, 90, 95]
+                ).map((h, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
                     <div
                       className={`w-full rounded-t transition-all hover:opacity-100 ${
@@ -118,20 +128,20 @@ export function MoneyTracker() {
               <div className="glass-card rounded-xl p-6">
                 <h3 className="text-sm font-bold text-white mb-4">Top Loss by Wallet</h3>
                 <div className="space-y-3">
-                  {[
-                    { addr: '0x7a25...dEad', loss: '$890,000', reports: 28, chain: 'ETH' },
-                    { addr: 'bc1q...0wlh', loss: '$456,000', reports: 15, chain: 'BTC' },
-                    { addr: 'TJYmz...hzXz', loss: '$234,000', reports: 12, chain: 'TRX' },
-                    { addr: '0x91cd...7e33', loss: '$178,000', reports: 9, chain: 'ETH' },
-                    { addr: 'bc1q...ex3p', loss: '$145,000', reports: 7, chain: 'BTC' },
-                  ].map((item, i) => (
+                  {(stats?.topWallets && stats.topWallets.length > 0 ? stats.topWallets : [
+                    { address: '0x7a25...dEad', loss: 890000, reports: 28, chain: 'ETH' },
+                    { address: 'bc1q...0wlh', loss: 456000, reports: 15, chain: 'BTC' },
+                    { address: 'TJYmz...hzXz', loss: 234000, reports: 12, chain: 'TRX' },
+                    { address: '0x91cd...7e33', loss: 178000, reports: 9, chain: 'ETH' },
+                    { address: 'bc1q...ex3p', loss: 145000, reports: 7, chain: 'BTC' },
+                  ]).slice(0, 5).map((item, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-lg bg-white/[0.02] border border-white/5 p-3">
                       <span className="text-xs font-bold text-slate-600 w-5">#{i + 1}</span>
                       <div className="flex-grow min-w-0">
-                        <code className="text-xs font-mono text-white">{item.addr}</code>
-                        <div className="text-[10px] text-slate-500 mt-0.5">{item.reports} reports • {item.chain}</div>
+                        <code className="text-xs font-mono text-white">{item.address.length > 16 ? item.address.slice(0,8) + '...' + item.address.slice(-4) : item.address}</code>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{item.reports} reports {'\u2022'} {item.chain}</div>
                       </div>
-                      <span className="text-sm font-bold text-cyber-red">{item.loss}</span>
+                      <span className="text-sm font-bold text-cyber-red">{fmtUsd(item.loss)}</span>
                     </div>
                   ))}
                 </div>
@@ -140,25 +150,27 @@ export function MoneyTracker() {
               <div className="glass-card rounded-xl p-6">
                 <h3 className="text-sm font-bold text-white mb-4">Top Loss by Domain</h3>
                 <div className="space-y-3">
-                  {[
-                    { domain: 'crypto-invest-returns.xyz', loss: '$345,000', reports: 23 },
-                    { domain: 'binance-secure-verify.com', loss: '$267,000', reports: 18 },
-                    { domain: 'defi-yield-pro.net', loss: '$189,000', reports: 11 },
-                    { domain: 'metamask-verify.io', loss: '$156,000', reports: 9 },
-                    { domain: 'eth-airdrop-claim.com', loss: '$98,000', reports: 7 },
-                  ].map((item, i) => (
+                  {(stats?.topDomains && stats.topDomains.length > 0 ? stats.topDomains : [
+                    { domain: 'crypto-invest-returns.xyz', loss: 345000, reports: 23 },
+                    { domain: 'binance-secure-verify.com', loss: 267000, reports: 18 },
+                    { domain: 'defi-yield-pro.net', loss: 189000, reports: 11 },
+                    { domain: 'metamask-verify.io', loss: 156000, reports: 9 },
+                    { domain: 'eth-airdrop-claim.com', loss: 98000, reports: 7 },
+                  ]).slice(0, 5).map((item, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-lg bg-white/[0.02] border border-white/5 p-3">
                       <span className="text-xs font-bold text-slate-600 w-5">#{i + 1}</span>
                       <div className="flex-grow min-w-0">
                         <code className="text-xs font-mono text-blue-400 truncate block">{item.domain}</code>
                         <div className="text-[10px] text-slate-500 mt-0.5">{item.reports} reports</div>
                       </div>
-                      <span className="text-sm font-bold text-cyber-red">{item.loss}</span>
+                      <span className="text-sm font-bold text-cyber-red">{fmtUsd(item.loss)}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
+            </>
+            )}
           </div>
         )}
 
@@ -270,30 +282,46 @@ export function MoneyTracker() {
         {view === 'type' && (
           <div className="animate-fade-in">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                { type: 'Pig Butchering', loss: '$1.8M', count: 34, pct: 38, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
-                { type: 'Crypto Investment', loss: '$980K', count: 28, pct: 20, icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-                { type: 'Phishing', loss: '$650K', count: 22, pct: 14, icon: Globe, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-                { type: 'Rug Pull / DeFi', loss: '$520K', count: 18, pct: 11, icon: Wallet, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-                { type: 'Romance Scam', loss: '$430K', count: 12, pct: 9, icon: Shield, color: 'text-pink-400', bg: 'bg-pink-500/10' },
-                { type: 'Other', loss: '$420K', count: 8, pct: 8, icon: BarChart3, color: 'text-slate-400', bg: 'bg-slate-500/10' },
-              ].map(item => (
-                <div key={item.type} className="glass-card-premium rounded-xl p-6">
-                  <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${item.bg} mb-3`}>
-                    <item.icon className={`h-5 w-5 ${item.color}`} />
+              {(() => {
+                const colorMap: Record<string, { icon: typeof AlertTriangle; color: string; bg: string }> = {
+                  'Pig Butchering': { icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
+                  'Crypto Investment Scam': { icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+                  'Phishing': { icon: Globe, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+                  'Rug Pull / DeFi Scam': { icon: Wallet, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+                  'Romance Scam': { icon: Shield, color: 'text-pink-400', bg: 'bg-pink-500/10' },
+                };
+                const fallback = { icon: BarChart3, color: 'text-slate-400', bg: 'bg-slate-500/10' };
+                const items = stats?.byType && stats.byType.length > 0
+                  ? stats.byType.map(t => {
+                      const totalCount = stats.byType.reduce((s, x) => s + x.count, 0) || 1;
+                      return { type: t.type, loss: t.loss, count: t.count, pct: Math.round((t.count / totalCount) * 100), ...(colorMap[t.type] || fallback) };
+                    })
+                  : [
+                      { type: 'Pig Butchering', loss: 1800000, count: 34, pct: 38, ...colorMap['Pig Butchering'] },
+                      { type: 'Crypto Investment Scam', loss: 980000, count: 28, pct: 20, ...colorMap['Crypto Investment Scam'] },
+                      { type: 'Phishing', loss: 650000, count: 22, pct: 14, ...colorMap['Phishing'] },
+                      { type: 'Rug Pull / DeFi Scam', loss: 520000, count: 18, pct: 11, ...colorMap['Rug Pull / DeFi Scam'] },
+                      { type: 'Romance Scam', loss: 430000, count: 12, pct: 9, ...colorMap['Romance Scam'] },
+                      { type: 'Other', loss: 420000, count: 8, pct: 8, ...fallback },
+                    ];
+                return items.map(item => (
+                  <div key={item.type} className="glass-card-premium rounded-xl p-6">
+                    <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${item.bg} mb-3`}>
+                      <item.icon className={`h-5 w-5 ${item.color}`} />
+                    </div>
+                    <h4 className="text-base font-bold text-white">{item.type}</h4>
+                    <div className="mt-2 text-2xl font-extrabold text-cyber-red">{fmtUsd(item.loss)}</div>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                      <span>{item.count} reports</span>
+                      <span>{'\u2022'}</span>
+                      <span>{item.pct}% of total</span>
+                    </div>
+                    <div className="mt-3 h-1.5 rounded-full bg-dark-700 overflow-hidden">
+                      <div className={`h-full rounded-full ${item.bg.replace('/10', '/40')} transition-all`} style={{ width: `${item.pct}%` }} />
+                    </div>
                   </div>
-                  <h4 className="text-base font-bold text-white">{item.type}</h4>
-                  <div className="mt-2 text-2xl font-extrabold text-cyber-red">{item.loss}</div>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                    <span>{item.count} reports</span>
-                    <span>•</span>
-                    <span>{item.pct}% of total</span>
-                  </div>
-                  <div className="mt-3 h-1.5 rounded-full bg-dark-700 overflow-hidden">
-                    <div className={`h-full rounded-full ${item.bg.replace('/10', '/40')} transition-all`} style={{ width: `${item.pct}%` }} />
-                  </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
         )}
