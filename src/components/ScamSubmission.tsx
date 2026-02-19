@@ -4,6 +4,8 @@ import {
   Globe, Phone, Mail, Wallet, DollarSign, User,
   Shield, Camera, Hash, ArrowRight, ChevronDown, Tag, MapPin
 } from 'lucide-react';
+import { submitScamReport } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 type SubmitStep = 'form' | 'uploading' | 'extracting' | 'review' | 'submitted';
 
@@ -45,7 +47,9 @@ const extractedEntities = [
 ];
 
 export function ScamSubmission() {
+  const { user } = useAuth();
   const [step, setStep] = useState<SubmitStep>('form');
+  const [submitError, setSubmitError] = useState('');
   const [report, setReport] = useState<ScamReport>({
     scamType: '', url: '', description: '', timeline: '',
     lossAmount: '', lossCurrency: 'USD', walletAddresses: '',
@@ -73,34 +77,57 @@ export function ScamSubmission() {
     handleFileUpload(e.dataTransfer.files);
   }, [handleFileUpload]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!report.scamType || !report.description.trim()) return;
-    caseIdRef.current = 'SC-' + Date.now().toString(36).toUpperCase();
     setStep('uploading');
     setProgress(0);
+    setSubmitError('');
 
-    // Phase 1: Upload simulation
-    const uploadInterval = setInterval(() => {
+    // Animate progress while calling API
+    const iv = setInterval(() => {
       setProgress(p => {
-        if (p >= 50) {
-          clearInterval(uploadInterval);
-          setStep('extracting');
-          // Phase 2: AI extraction
-          const extractInterval = setInterval(() => {
-            setProgress(p2 => {
-              if (p2 >= 100) {
-                clearInterval(extractInterval);
-                setTimeout(() => setStep('review'), 500);
-                return 100;
-              }
-              return p2 + 2;
-            });
-          }, 60);
-          return 50;
-        }
-        return p + 3;
+        if (p >= 90) { clearInterval(iv); return 90; }
+        return p + 2;
       });
-    }, 60);
+    }, 80);
+
+    try {
+      const result = await submitScamReport({
+        scamType: report.scamType,
+        url: report.url,
+        description: report.description,
+        timeline: report.timeline,
+        lossAmount: report.lossAmount,
+        lossCurrency: report.lossCurrency,
+        walletAddresses: report.walletAddresses,
+        phoneNumbers: report.phoneNumbers,
+        emails: report.emails,
+        usernames: report.usernames,
+        platform: report.platform,
+        userId: user?.id,
+      });
+
+      clearInterval(iv);
+      setProgress(100);
+      caseIdRef.current = result.caseId || 'SC-' + Date.now().toString(36).toUpperCase();
+      setStep('extracting');
+
+      // Brief extraction animation then show review
+      let extractProgress = 50;
+      const extractIv = setInterval(() => {
+        extractProgress += 3;
+        setProgress(extractProgress);
+        if (extractProgress >= 100) {
+          clearInterval(extractIv);
+          setTimeout(() => setStep('review'), 400);
+        }
+      }, 60);
+    } catch (e) {
+      clearInterval(iv);
+      setProgress(0);
+      setSubmitError(e instanceof Error ? e.message : 'Submission failed');
+      setStep('form');
+    }
   };
 
   const handleConfirmSubmit = () => {

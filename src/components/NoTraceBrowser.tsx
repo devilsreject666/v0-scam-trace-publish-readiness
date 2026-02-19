@@ -4,6 +4,7 @@ import {
   FileText, Code, ExternalLink, RefreshCw, X, ChevronLeft,
   ChevronRight, CheckCircle2, Eye, Loader2
 } from 'lucide-react';
+import { analyzePage, type BrowserAnalysis } from '@/lib/api';
 
 interface PageCapture {
   url: string;
@@ -16,35 +17,6 @@ interface PageCapture {
   timestamp: string;
 }
 
-const mockCapture: PageCapture = {
-  url: 'https://crypto-invest-returns.xyz',
-  title: 'CryptoInvest Pro — Guaranteed 300% Returns',
-  scripts: [
-    'analytics.js — Google Analytics (tracking)',
-    'wallet-connect-fake.js — SUSPICIOUS: Wallet drainer script detected',
-    'form-capture.js — MALICIOUS: Keylogger / credential harvester',
-    'obfuscated-7x9k.js — CRITICAL: Heavily obfuscated, communicates with C2 server',
-    'popup.js — Fake urgency timer script',
-  ],
-  links: [
-    'https://binance-secure-verify.com — PHISHING',
-    'https://t.me/cryptoinvest_manager — Telegram group',
-    'https://api.crypto-invest-returns.xyz/withdraw — Fake API endpoint',
-  ],
-  malwareDetected: true,
-  riskScore: 98,
-  flags: [
-    'Wallet drainer script detected — attempts to sign malicious transactions',
-    'Keylogger active — captures form inputs including passwords and seed phrases',
-    'Obfuscated JavaScript communicates with known C2 server (185.220.101.42)',
-    'Fake countdown timer creates artificial urgency',
-    'Content impersonates Binance and CoinBase',
-    'No legitimate business registration found',
-    'SSL certificate from free provider (Let\'s Encrypt)',
-  ],
-  timestamp: new Date().toISOString(),
-};
-
 export function NoTraceBrowser() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,22 +25,37 @@ export function NoTraceBrowser() {
   const [showCode, setShowCode] = useState(false);
   const [captured, setCaptured] = useState(false);
   const [activePanel, setActivePanel] = useState<'preview' | 'scripts' | 'links'>('preview');
+  const [error, setError] = useState('');
   const urlRef = useRef('');
 
-  const handleNavigate = () => {
-    const targetUrl = url.trim() || 'https://crypto-invest-returns.xyz';
+  const handleNavigate = async () => {
+    const targetUrl = url.trim();
+    if (!targetUrl) return;
     setUrl(targetUrl);
     urlRef.current = targetUrl;
     setLoading(true);
     setLoaded(false);
     setCapture(null);
     setCaptured(false);
+    setError('');
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const result: BrowserAnalysis = await analyzePage(targetUrl);
+      setCapture({
+        url: result.url,
+        title: result.title,
+        scripts: result.scripts,
+        links: result.links,
+        malwareDetected: result.malwareDetected,
+        riskScore: result.riskScore,
+        flags: result.flags,
+        timestamp: result.timestamp,
+      });
       setLoaded(true);
-      setCapture({ ...mockCapture, url: targetUrl, timestamp: new Date().toISOString() });
-    }, 2500);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to analyze URL');
+    }
+    setLoading(false);
   };
 
   const handleCapture = () => {
@@ -161,7 +148,16 @@ export function NoTraceBrowser() {
 
             {/* Browser content */}
             <div className="relative min-h-[400px] bg-dark-900/50">
-              {!loaded && !loading && (
+              {error && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <AlertTriangle className="h-10 w-10 text-red-400 mb-3" />
+                  <p className="text-sm text-red-400 font-medium mb-1">Analysis Failed</p>
+                  <p className="text-xs text-slate-500 max-w-md text-center">{error}</p>
+                  <button onClick={handleNavigate} className="mt-4 text-xs text-cyber-purple hover:underline">Try again</button>
+                </div>
+              )}
+
+              {!loaded && !loading && !error && (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/5">
                     <Globe className="h-10 w-10 text-slate-600" />

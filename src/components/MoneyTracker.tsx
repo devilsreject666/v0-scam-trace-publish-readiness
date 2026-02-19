@@ -1,13 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DollarSign, TrendingUp, Wallet, Globe, BarChart3,
-  ArrowRight, AlertTriangle, Shield, PieChart
+  ArrowRight, AlertTriangle, Shield, PieChart, Loader2
 } from 'lucide-react';
+import { getReportStats, type ReportStats } from '@/lib/api';
 
 type TrackerView = 'overview' | 'wallet' | 'domain' | 'type';
 
+function fmtUsd(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n.toFixed(0)}`;
+}
+
 export function MoneyTracker() {
   const [view, setView] = useState<TrackerView>('overview');
+  const [stats, setStats] = useState<ReportStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getReportStats()
+      .then(setStats)
+      .catch(() => {}) // silently fail, show zeros
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <section id="money-tracker" className="relative py-24 grid-bg">
