@@ -1,146 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import {
   Globe, Phone, Search, Shield, AlertTriangle, CheckCircle2,
   Lock, Server, MapPin, Wifi, ExternalLink,
   Loader2, Copy, ArrowRight, Eye, Hash, Activity
 } from 'lucide-react';
+import {
+  lookupDomain, lookupPhone, lookupIp,
+  type DomainResult, type PhoneResult, type IpResult,
+} from '@/lib/api';
 
 type ToolTab = 'domain' | 'phone' | 'ip';
-
-interface DomainResult {
-  domain: string;
-  registrar: string;
-  registeredDate: string;
-  expiryDate: string;
-  domainAge: string;
-  nameservers: string[];
-  registrantCountry: string;
-  registrantOrg: string;
-  ssl: { issuer: string; valid: boolean; grade: string; expiry: string };
-  hosting: { provider: string; ip: string; location: string; asn: string };
-  riskScore: number;
-  flags: string[];
-  scamReports: number;
-  phishing: boolean;
-  whoisPrivacy: boolean;
-}
-
-interface PhoneResult {
-  number: string;
-  carrier: string;
-  type: string;
-  country: string;
-  region: string;
-  city: string;
-  timezone: string;
-  isVoip: boolean;
-  isPrepaid: boolean;
-  riskScore: number;
-  scamReports: number;
-  flags: string[];
-  recentActivity: string[];
-  linkedPlatforms: string[];
-}
-
-interface IpResult {
-  ip: string;
-  country: string;
-  region: string;
-  city: string;
-  isp: string;
-  org: string;
-  asn: string;
-  isVpn: boolean;
-  isProxy: boolean;
-  isTor: boolean;
-  isHosting: boolean;
-  riskScore: number;
-  flags: string[];
-  abuseReports: number;
-  lat: number;
-  lng: number;
-}
-
-const mockDomainResult: DomainResult = {
-  domain: 'crypto-invest-returns.xyz',
-  registrar: 'NameSilo LLC',
-  registeredDate: '2024-01-03',
-  expiryDate: '2025-01-03',
-  domainAge: '12 days',
-  nameservers: ['ns1.hostinger.com', 'ns2.hostinger.com'],
-  registrantCountry: 'Russia',
-  registrantOrg: 'REDACTED FOR PRIVACY',
-  ssl: { issuer: "Let's Encrypt", valid: true, grade: 'B', expiry: '2024-04-02' },
-  hosting: { provider: 'Hostinger International', ip: '185.220.101.42', location: 'Lithuania', asn: 'AS47583' },
-  riskScore: 94,
-  flags: [
-    'Domain age under 30 days — HIGH RISK',
-    'Registered with WHOIS privacy — common in scam sites',
-    'Free SSL certificate (Let\'s Encrypt) — legitimate sites use paid SSL',
-    '.xyz TLD commonly used for throwaway scam domains',
-    'Hosting in Lithuania, registrant in Russia — geographic mismatch',
-    'Similar to 8 known phishing domains in our database',
-    'No DMARC/SPF records configured',
-    'Content matches known crypto investment scam templates',
-  ],
-  scamReports: 23,
-  phishing: true,
-  whoisPrivacy: true,
-};
-
-const mockPhoneResult: PhoneResult = {
-  number: '+1 (332) 555-0147',
-  carrier: 'TextNow (VoIP)',
-  type: 'VoIP / Virtual',
-  country: 'United States',
-  region: 'New York',
-  city: 'New York City',
-  timezone: 'America/New_York (EST)',
-  isVoip: true,
-  isPrepaid: false,
-  riskScore: 87,
-  scamReports: 4,
-  flags: [
-    'VoIP number — commonly used for disposable fraud communications',
-    'TextNow carrier — free VoIP service, no identity verification required',
-    '4 prior scam reports linked to this number',
-    'Number active for only 18 days',
-    'Used across multiple messaging platforms',
-    'Geographic location doesn\'t match claimed business address',
-  ],
-  recentActivity: [
-    'Reported for crypto investment scam — Jan 12, 2024',
-    'Reported for impersonation fraud — Jan 10, 2024',
-    'Used in WhatsApp scam group — Jan 8, 2024',
-    'First seen in scam database — Jan 3, 2024',
-  ],
-  linkedPlatforms: ['WhatsApp', 'Telegram', 'TextNow'],
-};
-
-const mockIpResult: IpResult = {
-  ip: '185.220.101.42',
-  country: 'Germany',
-  region: 'Hessen',
-  city: 'Frankfurt am Main',
-  isp: 'Tor Exit Node',
-  org: 'Zwiebelfreunde e.V.',
-  asn: 'AS205100',
-  isVpn: false,
-  isProxy: true,
-  isTor: true,
-  isHosting: false,
-  riskScore: 92,
-  flags: [
-    'Tor exit node — used for anonymized traffic',
-    'Known abuse reports associated with this IP',
-    'IP listed in 3 threat intelligence feeds',
-    'Proxy/anonymizer detected',
-    'Associated with malicious scanning activity',
-  ],
-  abuseReports: 147,
-  lat: 50.1109,
-  lng: 8.6821,
-};
 
 export function InvestigationTools() {
   const [activeTab, setActiveTab] = useState<ToolTab>('domain');
@@ -153,42 +22,66 @@ export function InvestigationTools() {
   const [phoneResult, setPhoneResult] = useState<PhoneResult | null>(null);
   const [ipResult, setIpResult] = useState<IpResult | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
-  const runScan = useCallback((type: ToolTab) => {
-    setScanning(true);
+  // Animate progress bar while an API call is in flight
+  const animateProgress = () => {
     setScanProgress(0);
-    if (type === 'domain') setDomainResult(null);
-    if (type === 'phone') setPhoneResult(null);
-    if (type === 'ip') setIpResult(null);
-
-    const interval = setInterval(() => {
+    const iv = setInterval(() => {
       setScanProgress(p => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setScanning(false);
-          if (type === 'domain') setDomainResult(mockDomainResult);
-          if (type === 'phone') setPhoneResult(mockPhoneResult);
-          if (type === 'ip') setIpResult(mockIpResult);
-          return 100;
-        }
-        return p + 3;
+        if (p >= 90) { clearInterval(iv); return 90; }
+        return p + 2;
       });
-    }, 50);
-  }, []);
-
-  const handleDomainScan = () => {
-    if (!domainInput.trim()) setDomainInput('crypto-invest-returns.xyz');
-    runScan('domain');
+    }, 80);
+    return iv;
   };
 
-  const handlePhoneScan = () => {
-    if (!phoneInput.trim()) setPhoneInput('+1 (332) 555-0147');
-    runScan('phone');
+  const handleDomainScan = async () => {
+    const input = domainInput.trim();
+    if (!input) return;
+    setScanning(true); setError(''); setDomainResult(null);
+    const iv = animateProgress();
+    try {
+      const result = await lookupDomain(input);
+      clearInterval(iv); setScanProgress(100);
+      setDomainResult(result);
+    } catch (e) {
+      clearInterval(iv); setScanProgress(0);
+      setError(e instanceof Error ? e.message : 'Domain lookup failed');
+    }
+    setScanning(false);
   };
 
-  const handleIpScan = () => {
-    if (!ipInput.trim()) setIpInput('185.220.101.42');
-    runScan('ip');
+  const handlePhoneScan = async () => {
+    const input = phoneInput.trim();
+    if (!input) return;
+    setScanning(true); setError(''); setPhoneResult(null);
+    const iv = animateProgress();
+    try {
+      const result = await lookupPhone(input);
+      clearInterval(iv); setScanProgress(100);
+      setPhoneResult(result);
+    } catch (e) {
+      clearInterval(iv); setScanProgress(0);
+      setError(e instanceof Error ? e.message : 'Phone lookup failed');
+    }
+    setScanning(false);
+  };
+
+  const handleIpScan = async () => {
+    const input = ipInput.trim();
+    if (!input) return;
+    setScanning(true); setError(''); setIpResult(null);
+    const iv = animateProgress();
+    try {
+      const result = await lookupIp(input);
+      clearInterval(iv); setScanProgress(100);
+      setIpResult(result);
+    } catch (e) {
+      clearInterval(iv); setScanProgress(0);
+      setError(e instanceof Error ? e.message : 'IP lookup failed');
+    }
+    setScanning(false);
   };
 
   const copyText = (text: string) => {
@@ -248,6 +141,13 @@ export function InvestigationTools() {
             </button>
           ))}
         </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="mb-6 mx-auto max-w-2xl flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {error}
+          </div>
+        )}
 
         {/* ==================== DOMAIN CHECKER ==================== */}
         {activeTab === 'domain' && (
