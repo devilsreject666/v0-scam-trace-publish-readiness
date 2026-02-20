@@ -4,6 +4,9 @@ import {
   Globe, Phone, Mail, Wallet, DollarSign, User,
   Shield, Camera, Hash, ArrowRight, ChevronDown, Tag, MapPin
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { extractWallets, extractUrls, extractPhones, extractEmails, extractIPs } from '@/lib/extractors';
 
 type SubmitStep = 'form' | 'uploading' | 'extracting' | 'review' | 'submitted';
 
@@ -36,15 +39,15 @@ const scamTypes = [
   'Other',
 ];
 
-const extractedEntities = [
-  { type: 'wallet', value: '0x7a250d...dEad', chain: 'Ethereum', risk: 'critical' },
-  { type: 'wallet', value: 'bc1qxy2...0wlh', chain: 'Bitcoin', risk: 'high' },
-  { type: 'url', value: 'crypto-invest-returns.xyz', chain: '', risk: 'critical' },
-  { type: 'phone', value: '+1 (332) 555-0147', chain: '', risk: 'high' },
-  { type: 'email', value: 'invest@protonmail.com', chain: '', risk: 'medium' },
-];
+interface ExtractedEntity {
+  type: string;
+  value: string;
+  chain?: string;
+  risk: string;
+}
 
 export function ScamSubmission() {
+  const { user } = useAuth();
   const [step, setStep] = useState<SubmitStep>('form');
   const [report, setReport] = useState<ScamReport>({
     scamType: '', url: '', description: '', timeline: '',
@@ -55,6 +58,8 @@ export function ScamSubmission() {
   const [progress, setProgress] = useState(0);
   const [activeSection, setActiveSection] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [extractedEntities, setExtractedEntities] = useState<ExtractedEntity[]>([]);
+  const [submitError, setSubmitError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const caseIdRef = useRef('');
 
@@ -78,14 +83,45 @@ export function ScamSubmission() {
     caseIdRef.current = 'SC-' + Date.now().toString(36).toUpperCase();
     setStep('uploading');
     setProgress(0);
+    setSubmitError('');
 
-    // Phase 1: Upload simulation
+    // Build the full text blob for extraction
+    const allText = [
+      report.description, report.timeline, report.url,
+      report.walletAddresses, report.phoneNumbers, report.emails,
+      report.usernames,
+    ].join('\n');
+
+    // Phase 1: Simulate upload progress
     const uploadInterval = setInterval(() => {
       setProgress(p => {
         if (p >= 50) {
           clearInterval(uploadInterval);
           setStep('extracting');
-          // Phase 2: AI extraction
+
+          // Phase 2: Real entity extraction (runs instantly, progress is just UX)
+          const wallets = extractWallets(allText);
+          const urls = extractUrls(allText);
+          const phones = extractPhones(allText);
+          const emails = extractEmails(allText);
+          const ips = extractIPs(allText);
+
+          const entities: ExtractedEntity[] = [
+            ...wallets.map(w => ({
+              type: 'wallet',
+              value: w.value,
+              chain: w.type === 'wallet_eth' ? 'Ethereum' : w.type === 'wallet_btc' ? 'Bitcoin' : 'TRON',
+              risk: 'high',
+            })),
+            ...urls.map(u => ({ type: 'url', value: u.value, risk: 'high' })),
+            ...phones.map(p => ({ type: 'phone', value: p.value, risk: 'medium' })),
+            ...emails.map(e => ({ type: 'email', value: e.value, risk: 'medium' })),
+            ...ips.map(ip => ({ type: 'ip', value: ip, risk: 'medium' })),
+          ];
+
+          setExtractedEntities(entities);
+
+          // Animate extraction progress
           const extractInterval = setInterval(() => {
             setProgress(p2 => {
               if (p2 >= 100) {
@@ -93,9 +129,9 @@ export function ScamSubmission() {
                 setTimeout(() => setStep('review'), 500);
                 return 100;
               }
-              return p2 + 2;
+              return p2 + 3;
             });
-          }, 60);
+          }, 50);
           return 50;
         }
         return p + 3;
@@ -103,8 +139,51 @@ export function ScamSubmission() {
     }, 60);
   };
 
-  const handleConfirmSubmit = () => {
-    setStep('submitted');
+  const handleConfirmSubmit = async () => {
+    if (!user) {
+      setSubmitError('You must be signed in to submit a report.');
+      setStep('review');
+      return;
+    }
+
+    try {
+      // Parse loss amount
+      const lossNum = parseFloat(report.lossAmount.replace(/[^0-9.]/g, '')) || 0;
+
+      // Insert case into Supabase
+      const { data: caseData, error: caseError } = await supabase
+        .from('cases')
+        .insert({
+          title: `${report.scamType} — ${report.platform || 'Unknown Platform'}`,
+          description: report.description,
+          scam_type: report.scamType,
+          status: 'open',
+          total_loss: lossNum,
+          user_id: user.id,
+        })
+        .select('id')
+        .single();
+
+      if (caseError) throw caseError;
+
+      // Insert extracted evidence
+      if (caseData && extractedEntities.length > 0) {
+        const evidenceRows = extractedEntities.map(e => ({
+          case_id: caseData.id,
+          type: e.type,
+          value: e.value,
+          label: e.chain || e.type,
+        }));
+
+        await supabase.from('evidence').insert(evidenceRows);
+      }
+
+      caseIdRef.current = caseData?.id || caseIdRef.current;
+      setStep('submitted');
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit report.');
+      setStep('review');
+    }
   };
 
   const handleReset = () => {
@@ -580,13 +659,19 @@ export function ScamSubmission() {
                   Review the extracted entities below. Confirm to submit your report to the ScamTrace intelligence catalog.
                 </p>
 
+                {submitError && (
+                  <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {submitError}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 mb-6">
                   {[
-                    { label: 'Wallets', value: '2', color: 'text-amber-400' },
-                    { label: 'URLs', value: '1', color: 'text-blue-400' },
-                    { label: 'Phones', value: '1', color: 'text-green-400' },
-                    { label: 'Emails', value: '1', color: 'text-purple-400' },
-                    { label: 'Total', value: '5', color: 'text-cyber-green' },
+                    { label: 'Wallets', value: String(extractedEntities.filter(e => e.type === 'wallet').length), color: 'text-amber-400' },
+                    { label: 'URLs', value: String(extractedEntities.filter(e => e.type === 'url').length), color: 'text-blue-400' },
+                    { label: 'Phones', value: String(extractedEntities.filter(e => e.type === 'phone').length), color: 'text-green-400' },
+                    { label: 'Emails', value: String(extractedEntities.filter(e => e.type === 'email').length), color: 'text-purple-400' },
+                    { label: 'Total', value: String(extractedEntities.length), color: 'text-cyber-green' },
                   ].map(s => (
                     <div key={s.label} className="rounded-lg bg-white/[0.02] border border-white/5 p-3 text-center">
                       <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
@@ -673,8 +758,8 @@ export function ScamSubmission() {
                 <div className="rounded-lg bg-dark-900/50 border border-white/5 p-4 mb-6 font-mono text-xs text-slate-400 space-y-1">
                   <div>Case ID: <span className="text-cyber-green">{caseIdRef.current}</span></div>
                   <div>Status: <span className="text-cyber-green">Active — Under Analysis</span></div>
-                  <div>Entities Linked: <span className="text-white">5</span></div>
-                  <div>Cross-references Found: <span className="text-cyber-orange">3 matching reports</span></div>
+                  <div>Entities Linked: <span className="text-white">{extractedEntities.length}</span></div>
+                  <div>Saved to: <span className="text-cyber-orange">Supabase database</span></div>
                 </div>
 
                 <div className="space-y-3">

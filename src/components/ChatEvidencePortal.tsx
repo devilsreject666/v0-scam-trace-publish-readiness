@@ -5,6 +5,7 @@ import {
   X, Loader2, Link2, Send, Eye, Copy, Image,
   ArrowRight, Hash, Bot, Smartphone, Camera
 } from 'lucide-react';
+import { extractWallets, extractUrls, extractPhones, extractEmails, extractIPs } from '@/lib/extractors';
 
 interface ExtractedEntity {
   type: 'wallet' | 'url' | 'phone' | 'email' | 'ip';
@@ -13,42 +14,16 @@ interface ExtractedEntity {
   detail: string;
 }
 
-interface ChatMessage {
-  sender: 'scammer' | 'victim';
+interface ParsedMessage {
+  sender: 'other' | 'self';
   text: string;
   time: string;
-  flagged?: boolean;
-  entities?: string[];
+  flagged: boolean;
+  entities: string[];
 }
 
 type PortalType = 'telegram' | 'whatsapp' | null;
 type UploadStep = 'select' | 'connect' | 'upload' | 'analyzing' | 'results';
-
-const mockExtractedEntities: ExtractedEntity[] = [
-  { type: 'wallet', value: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', risk: 'critical', detail: 'ETH address — 12 scam reports, linked to Tornado Cash' },
-  { type: 'wallet', value: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh', risk: 'critical', detail: 'BTC address — connected to Wasabi CoinJoin, 8 fraud reports' },
-  { type: 'wallet', value: 'TJYmzLp4vLGHN4Rz8dUwR5cXfQz4kGhzXz', risk: 'high', detail: 'TRON/TRC-20 address — recent high-volume USDT transfers' },
-  { type: 'url', value: 'https://crypto-invest-returns.xyz', risk: 'critical', detail: 'Domain age: 12 days, registered in Russia, SSL from free provider' },
-  { type: 'url', value: 'https://binance-secure-verify.com', risk: 'critical', detail: 'Phishing site impersonating Binance — flagged by 3 threat feeds' },
-  { type: 'phone', value: '+1 (332) 555-0147', risk: 'high', detail: 'VoIP number, TextNow carrier, linked to 4 scam reports' },
-  { type: 'email', value: 'invest.manager@protonmail.com', risk: 'high', detail: 'Used across 6 reported scam campaigns' },
-  { type: 'ip', value: '185.220.101.42', risk: 'medium', detail: 'Tor exit node, geolocation: Germany, VPN/Proxy detected' },
-];
-
-const mockChatMessages: ChatMessage[] = [
-  { sender: 'scammer', text: 'Hi! I saw your post about crypto investing. I can help you earn 300% returns in just 2 weeks!', time: '10:23 AM', flagged: true },
-  { sender: 'victim', text: 'That sounds interesting but also too good to be true. How does it work?', time: '10:25 AM' },
-  { sender: 'scammer', text: 'We use an AI trading bot that never loses. Check our verified platform: https://crypto-invest-returns.xyz', time: '10:26 AM', flagged: true, entities: ['https://crypto-invest-returns.xyz'] },
-  { sender: 'victim', text: 'What\'s the minimum investment?', time: '10:28 AM' },
-  { sender: 'scammer', text: 'Just $500 to start. Send to this address: 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', time: '10:30 AM', flagged: true, entities: ['0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'] },
-  { sender: 'scammer', text: 'You can also send BTC here: bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh', time: '10:30 AM', flagged: true, entities: ['bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh'] },
-  { sender: 'scammer', text: 'Or USDT (TRC-20): TJYmzLp4vLGHN4Rz8dUwR5cXfQz4kGhzXz', time: '10:31 AM', flagged: true, entities: ['TJYmzLp4vLGHN4Rz8dUwR5cXfQz4kGhzXz'] },
-  { sender: 'victim', text: 'Ok let me verify this first. Can I speak to someone?', time: '10:35 AM' },
-  { sender: 'scammer', text: 'Of course! Call our senior manager at +1 (332) 555-0147 or email invest.manager@protonmail.com', time: '10:36 AM', flagged: true, entities: ['+1 (332) 555-0147', 'invest.manager@protonmail.com'] },
-  { sender: 'scammer', text: 'Also verify your account at https://binance-secure-verify.com to unlock premium features 🚀', time: '10:38 AM', flagged: true, entities: ['https://binance-secure-verify.com'] },
-  { sender: 'victim', text: 'I\'ll think about it and get back to you', time: '10:42 AM' },
-  { sender: 'scammer', text: 'Hurry! This offer expires today. We already have 500 people who made over $50,000 each! Don\'t miss out! 💰💰💰', time: '10:43 AM', flagged: true },
-];
 
 const entityIcons: Record<string, typeof Wallet> = {
   wallet: Wallet,
@@ -79,6 +54,8 @@ export function ChatEvidencePortal() {
   const [activeResultTab, setActiveResultTab] = useState<'chat' | 'entities' | 'timeline'>('chat');
   const [dragOver, setDragOver] = useState(false);
   const [copiedEntity, setCopiedEntity] = useState<string | null>(null);
+  const [realEntities, setRealEntities] = useState<ExtractedEntity[]>([]);
+  const [parsedMessages, setParsedMessages] = useState<ParsedMessage[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const screenshotInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,6 +91,60 @@ export function ChatEvidencePortal() {
     setStep('analyzing');
     setAnalyzeProgress(0);
 
+    // Extract real entities from pasted chat text
+    const text = pastedChat.trim();
+    const wallets = extractWallets(text);
+    const urls = extractUrls(text);
+    const phones = extractPhones(text);
+    const emails = extractEmails(text);
+    const ips = extractIPs(text);
+
+    const entities: ExtractedEntity[] = [
+      ...wallets.map(w => ({
+        type: 'wallet' as const, value: w.value,
+        risk: 'high' as const,
+        detail: `${w.type === 'wallet_eth' ? 'Ethereum' : w.type === 'wallet_btc' ? 'Bitcoin' : 'TRON'} address found in chat text`,
+      })),
+      ...urls.map(u => ({
+        type: 'url' as const, value: u.value,
+        risk: 'high' as const,
+        detail: 'URL found in chat — check domain intelligence',
+      })),
+      ...phones.map(p => ({
+        type: 'phone' as const, value: p.value,
+        risk: 'medium' as const,
+        detail: 'Phone number found in chat — run carrier lookup',
+      })),
+      ...emails.map(e => ({
+        type: 'email' as const, value: e.value,
+        risk: 'medium' as const,
+        detail: 'Email found in chat — may be disposable or scam-linked',
+      })),
+      ...ips.map(ip => ({
+        type: 'ip' as const, value: ip,
+        risk: 'medium' as const,
+        detail: 'IP address found in chat — run geolocation/VPN check',
+      })),
+    ];
+
+    // Parse chat messages line-by-line
+    const lines = text.split('\n').filter(l => l.trim());
+    const allEntityValues = entities.map(e => e.value);
+    const messages: ParsedMessage[] = lines.map(line => {
+      const lineEntities = allEntityValues.filter(v => line.includes(v));
+      const hasEntity = lineEntities.length > 0;
+      return {
+        sender: 'other' as const,
+        text: line,
+        time: '',
+        flagged: hasEntity,
+        entities: lineEntities,
+      };
+    });
+
+    setRealEntities(entities);
+    setParsedMessages(messages);
+
     const interval = setInterval(() => {
       setAnalyzeProgress(p => {
         if (p >= 100) {
@@ -124,9 +155,9 @@ export function ChatEvidencePortal() {
           }, 300);
           return 100;
         }
-        return p + 2;
+        return p + 3;
       });
-    }, 60);
+    }, 50);
   };
 
   const handleReset = () => {
@@ -526,23 +557,23 @@ export function ChatEvidencePortal() {
               {/* Results summary */}
               <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-white">{mockChatMessages.length}</div>
-                  <div className="text-xs text-slate-400">Messages Analyzed</div>
+                  <div className="text-2xl font-bold text-white">{parsedMessages.length}</div>
+                  <div className="text-xs text-slate-400">Lines Analyzed</div>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-cyber-red">{mockChatMessages.filter(m => m.flagged).length}</div>
-                  <div className="text-xs text-slate-400">Flagged Messages</div>
+                  <div className="text-2xl font-bold text-cyber-red">{parsedMessages.filter(m => m.flagged).length}</div>
+                  <div className="text-xs text-slate-400">Flagged Lines</div>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-amber-400">{mockExtractedEntities.filter(e => e.type === 'wallet').length}</div>
+                  <div className="text-2xl font-bold text-amber-400">{realEntities.filter(e => e.type === 'wallet').length}</div>
                   <div className="text-xs text-slate-400">Wallets Found</div>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-cyber-blue">{mockExtractedEntities.filter(e => e.type === 'url').length}</div>
+                  <div className="text-2xl font-bold text-cyber-blue">{realEntities.filter(e => e.type === 'url').length}</div>
                   <div className="text-xs text-slate-400">URLs Detected</div>
                 </div>
                 <div className="glass-card rounded-xl p-4 text-center col-span-2 sm:col-span-1">
-                  <div className="text-2xl font-bold text-cyber-orange">{mockExtractedEntities.length}</div>
+                  <div className="text-2xl font-bold text-cyber-orange">{realEntities.length}</div>
                   <div className="text-xs text-slate-400">Total Entities</div>
                 </div>
               </div>
@@ -551,7 +582,7 @@ export function ChatEvidencePortal() {
               <div className="mb-4 flex flex-wrap items-center gap-1 rounded-lg border border-white/5 bg-dark-800 p-1 w-fit">
                 {([
                   { key: 'chat' as const, label: 'Chat Analysis' },
-                  { key: 'entities' as const, label: `Extracted Entities (${mockExtractedEntities.length})` },
+                  { key: 'entities' as const, label: `Extracted Entities (${realEntities.length})` },
                   { key: 'timeline' as const, label: 'Evidence Timeline' },
                 ]).map(tab => (
                   <button
@@ -580,22 +611,19 @@ export function ChatEvidencePortal() {
                     </div>
                   </div>
                   <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
-                    {mockChatMessages.map((msg, idx) => (
-                      <div key={idx} className={`flex ${msg.sender === 'victim' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                          msg.sender === 'scammer'
-                            ? `bg-dark-700 ${msg.flagged ? 'border border-red-500/20 bg-red-500/[0.03]' : ''}`
-                            : 'bg-brand-700/30'
-                        }`}>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] font-bold uppercase ${msg.sender === 'scammer' ? 'text-red-400' : 'text-cyan-400'}`}>
-                              {msg.sender}
-                            </span>
-                            <span className="text-[10px] text-slate-500">{msg.time}</span>
-                            {msg.flagged && <AlertTriangle className="h-3 w-3 text-red-400" />}
-                          </div>
+                    {parsedMessages.length === 0 ? (
+                      <p className="text-sm text-slate-500 py-8 text-center">No chat messages to display. Paste chat text and run analysis first.</p>
+                    ) : parsedMessages.map((msg, idx) => (
+                      <div key={idx} className="flex justify-start">
+                        <div className={`max-w-[90%] rounded-2xl px-4 py-3 bg-dark-700 ${msg.flagged ? 'border border-red-500/20 bg-red-500/[0.03]' : ''}`}>
+                          {msg.flagged && (
+                            <div className="flex items-center gap-1 mb-1">
+                              <AlertTriangle className="h-3 w-3 text-red-400" />
+                              <span className="text-[10px] font-bold text-red-400">ENTITY DETECTED</span>
+                            </div>
+                          )}
                           <p className="text-sm text-slate-200 break-words">{msg.text}</p>
-                          {msg.entities && msg.entities.length > 0 && (
+                          {msg.entities.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               {msg.entities.map((e, i) => (
                                 <button
@@ -614,7 +642,7 @@ export function ChatEvidencePortal() {
                     ))}
                   </div>
                   <div className="border-t border-white/5 px-4 py-3 flex items-center justify-between">
-                    <span className="text-xs text-slate-500">{mockChatMessages.length} messages • {mockChatMessages.filter(m => m.flagged).length} flagged</span>
+                    <span className="text-xs text-slate-500">{parsedMessages.length} lines analyzed, {parsedMessages.filter(m => m.flagged).length} flagged</span>
                     <button className="flex items-center gap-1.5 text-xs font-medium text-cyber-green hover:underline">
                       Export Analysis <ArrowRight className="h-3 w-3" />
                     </button>
@@ -625,7 +653,10 @@ export function ChatEvidencePortal() {
               {/* Extracted Entities */}
               {activeResultTab === 'entities' && (
                 <div className="space-y-3">
-                  {mockExtractedEntities.map((entity, idx) => {
+                  {realEntities.length === 0 && (
+                    <p className="text-sm text-slate-500 py-8 text-center">No entities were found. Paste chat text containing wallet addresses, URLs, phone numbers, or emails and run the analysis.</p>
+                  )}
+                  {realEntities.map((entity, idx) => {
                     const Icon = entityIcons[entity.type];
                     return (
                       <div key={idx} className={`glass-card rounded-xl p-4 border ${

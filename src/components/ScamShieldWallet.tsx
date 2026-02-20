@@ -2,8 +2,15 @@ import { useState } from 'react';
 import {
   Shield, AlertTriangle, Send, Eye, EyeOff, ArrowRight,
   CheckCircle2, XCircle, Copy, Wallet, ChevronDown, Info, 
-  CheckCircle, Activity
+  CheckCircle, Activity, Loader2
 } from 'lucide-react';
+import { ethAddressAnalysis, btcAddressAnalysis } from '@/lib/api';
+
+interface RiskResult {
+  riskScore: number;
+  walletAge: string;
+  flags: string[];
+}
 
 export function ScamShieldWallet() {
   const [sendAddress, setSendAddress] = useState('');
@@ -17,11 +24,39 @@ export function ScamShieldWallet() {
   const [showTooltip, setShowTooltip] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [riskResult, setRiskResult] = useState<RiskResult | null>(null);
+  const [checkError, setCheckError] = useState('');
 
-  const handleSendCheck = () => {
-    if (sendAddress.trim() && sendAmount.trim()) {
+  const handleSendCheck = async () => {
+    if (!sendAddress.trim() || !sendAmount.trim()) return;
+    setChecking(true);
+    setCheckError('');
+    setRiskResult(null);
+
+    try {
+      const isEth = /^0x[a-fA-F0-9]{40}$/.test(sendAddress.trim());
+      const isBtc = /^(1|3|bc1)[a-zA-HJ-NP-Z0-9]{25,62}$/.test(sendAddress.trim());
+
+      let result: RiskResult;
+
+      if (isEth || selectedChain === 'Ethereum' || selectedChain === 'Polygon' || selectedChain === 'Arbitrum' || selectedChain === 'Optimism' || selectedChain === 'BSC') {
+        const analysis = await ethAddressAnalysis(sendAddress.trim());
+        result = { riskScore: analysis.riskScore, walletAge: analysis.walletAge, flags: analysis.flags };
+      } else if (isBtc || selectedChain === 'Bitcoin') {
+        const analysis = await btcAddressAnalysis(sendAddress.trim());
+        result = { riskScore: analysis.riskScore, walletAge: analysis.walletAge, flags: analysis.flags };
+      } else {
+        throw new Error('Unsupported address format. Enter a valid ETH or BTC address.');
+      }
+
+      setRiskResult(result);
       setShowWarning(true);
       setRiskChecked(true);
+    } catch (err) {
+      setCheckError(err instanceof Error ? err.message : 'Risk check failed.');
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -261,43 +296,49 @@ export function ScamShieldWallet() {
                   {!riskChecked && (
                     <button
                       onClick={handleSendCheck}
-                      disabled={!sendAddress.trim() || !sendAmount.trim()}
-                      className="w-full rounded-xl border border-cyber-blue/30 bg-cyber-blue/10 py-3 text-sm font-bold text-cyber-blue transition hover:bg-cyber-blue/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={!sendAddress.trim() || !sendAmount.trim() || checking}
+                      className="w-full rounded-xl border border-cyber-blue/30 bg-cyber-blue/10 py-3 text-sm font-bold text-cyber-blue transition hover:bg-cyber-blue/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      Check Address Risk Before Sending
+                      {checking ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Analyzing Address on Blockchain...</>
+                      ) : (
+                        'Check Address Risk Before Sending'
+                      )}
                     </button>
                   )}
                 </div>
               </div>
 
+              {/* Error from risk check */}
+              {checkError && (
+                <div className="glass-card rounded-xl border-red-500/20 p-4 animate-fade-in">
+                  <div className="flex items-center gap-2 text-sm text-red-400">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {checkError}
+                  </div>
+                </div>
+              )}
+
               {/* Warning panel */}
-              {showWarning && !sendSuccess && (
+              {showWarning && riskResult && !sendSuccess && (
                 <div className="animate-fade-in-up glass-card rounded-xl border-cyber-red/30 p-6">
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-red-500/10">
-                      <AlertTriangle className="h-5 w-5 text-cyber-red" />
+                      <AlertTriangle className={`h-5 w-5 ${riskResult.riskScore >= 50 ? 'text-cyber-red' : riskResult.riskScore >= 25 ? 'text-orange-400' : 'text-green-400'}`} />
                     </div>
                     <div className="flex-grow min-w-0">
-                      <h4 className="text-base font-bold text-cyber-red">⚠️ HIGH RISK ADDRESS DETECTED</h4>
+                      <h4 className={`text-base font-bold ${riskResult.riskScore >= 50 ? 'text-cyber-red' : riskResult.riskScore >= 25 ? 'text-orange-400' : 'text-green-400'}`}>
+                        {riskResult.riskScore >= 50 ? 'HIGH RISK ADDRESS DETECTED' : riskResult.riskScore >= 25 ? 'MEDIUM RISK ADDRESS' : 'LOW RISK ADDRESS'}
+                      </h4>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Risk Score: {riskResult.riskScore}/100 | Wallet Age: {riskResult.walletAge}
+                      </p>
                       <p className="mt-2 text-sm text-slate-400">
-                        This address has been flagged in our database with the following risks:
+                        Real-time blockchain analysis results:
                       </p>
                       <ul className="mt-3 space-y-2">
-                        {[
-                          'Associated with 12 reported scam incidents',
-                          selectedChain === 'Bitcoin'
-                            ? 'Connected to known BTC mixer services (Wasabi CoinJoin, Whirlpool)'
-                            : 'Connected to known mixer services (Tornado Cash)',
-                          'Funds traced to sanctioned entities',
-                          selectedChain === 'Bitcoin'
-                            ? 'UTXO pattern consistent with BTC laundering via peel chains'
-                            : 'Pattern consistent with pig butchering scam',
-                          selectedChain === 'Bitcoin'
-                            ? 'Address linked to cross-chain bridge deposits from Ethereum'
-                            : 'Cross-chain bridge activity detected to Bitcoin network',
-                        ].map(risk => (
-                          <li key={risk} className="flex items-start gap-2 text-sm text-red-300">
-                            <XCircle className="h-4 w-4 flex-shrink-0 text-cyber-red mt-0.5" />
+                        {(riskResult.flags.length > 0 ? riskResult.flags : ['No significant risk indicators found for this address']).map((risk, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-red-300">
+                            <XCircle className={`h-4 w-4 flex-shrink-0 mt-0.5 ${riskResult.riskScore >= 50 ? 'text-cyber-red' : 'text-orange-400'}`} />
                             {risk}
                           </li>
                         ))}

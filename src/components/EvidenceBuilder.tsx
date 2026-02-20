@@ -1,10 +1,28 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   FileText, Download, CheckCircle2, Clock, Hash, GitBranch,
-  User, Shield, AlertTriangle, Landmark, ArrowRight, Printer, Lock
+  User, Shield, AlertTriangle, Landmark, ArrowRight, Printer, Lock, Loader2
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+
+interface CaseSummary {
+  id: string;
+  title: string;
+  scam_type: string;
+  total_loss: number;
+  created_at: string;
+  status: string;
+}
+
+interface EvidenceItem {
+  type: string;
+  value: string;
+  label: string;
+}
 
 export function EvidenceBuilder() {
+  const { user } = useAuth();
   const [statement, setStatement] = useState('');
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -12,6 +30,32 @@ export function EvidenceBuilder() {
   const packetIdRef = useRef('');
   const packetHashRef = useRef('');
   const packetTimeRef = useRef('');
+  const [cases, setCases] = useState<CaseSummary[]>([]);
+  const [selectedCaseId, setSelectedCaseId] = useState('');
+  const [caseEvidence, setCaseEvidence] = useState<EvidenceItem[]>([]);
+  const [loadingCases, setLoadingCases] = useState(false);
+
+  // Fetch user's cases
+  useEffect(() => {
+    if (!user) return;
+    setLoadingCases(true);
+    supabase.from('cases').select('id, title, scam_type, total_loss, created_at, status')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setCases(data || []);
+        setLoadingCases(false);
+      });
+  }, [user]);
+
+  // Fetch evidence when case is selected
+  useEffect(() => {
+    if (!selectedCaseId) { setCaseEvidence([]); return; }
+    supabase.from('evidence').select('type, value, label')
+      .eq('case_id', selectedCaseId)
+      .then(({ data }) => setCaseEvidence(data || []));
+  }, [selectedCaseId]);
+
+  const selectedCase = cases.find(c => c.id === selectedCaseId);
 
   const handleGenerate = () => {
     if (generating) return;
@@ -42,7 +86,11 @@ export function EvidenceBuilder() {
   };
 
   const handleDownload = () => {
-    // Generate a text-based evidence report
+    const wallets = caseEvidence.filter(e => e.type === 'wallet').map(e => e.value);
+    const domains = caseEvidence.filter(e => e.type === 'domain' || e.type === 'url').map(e => e.value);
+    const phones = caseEvidence.filter(e => e.type === 'phone').map(e => e.value);
+    const emails = caseEvidence.filter(e => e.type === 'email').map(e => e.value);
+
     const report = `
 SCAMTRACE EVIDENCE PACKET
 ========================
@@ -50,64 +98,34 @@ Packet ID: ${packetIdRef.current}
 Generated: ${packetTimeRef.current}
 Integrity Hash: ${packetHashRef.current}
 
+CASE INFORMATION
+----------------
+${selectedCase ? `Case: ${selectedCase.title}
+Type: ${selectedCase.scam_type}
+Status: ${selectedCase.status}
+Total Loss: $${selectedCase.total_loss?.toLocaleString() || 0}
+Created: ${new Date(selectedCase.created_at).toLocaleDateString()}` : 'No case selected'}
+
 VICTIM STATEMENT
 ----------------
 ${statement || 'No statement provided'}
 
-INVESTIGATION SUMMARY
---------------------
-Source Address: 0x7a250d...dEad
-Total Amount: 12.5 ETH + 0.27 BTC (~$45,500 USD)
-Chains Involved: Ethereum, Bitcoin, Polygon, Arbitrum
-Mixers Detected: 2 (Tornado Cash + Wasabi CoinJoin)
-Bridges Used: 3 (Hop Protocol, RenBridge to BTC)
-Exchange Deposits: 2 (Binance + Kraken)
+EVIDENCE SUMMARY
+----------------
+Wallet Addresses (${wallets.length}):
+${wallets.length > 0 ? wallets.map((w, i) => `  ${i + 1}. ${w}`).join('\n') : '  None submitted'}
+
+Domains/URLs (${domains.length}):
+${domains.length > 0 ? domains.map((d, i) => `  ${i + 1}. ${d}`).join('\n') : '  None submitted'}
+
+Phone Numbers (${phones.length}):
+${phones.length > 0 ? phones.map((p, i) => `  ${i + 1}. ${p}`).join('\n') : '  None submitted'}
+
+Emails (${emails.length}):
+${emails.length > 0 ? emails.map((e, i) => `  ${i + 1}. ${e}`).join('\n') : '  None submitted'}
+
+Total Evidence Items: ${caseEvidence.length}
 Investigation Date: ${new Date().toISOString().split('T')[0]}
-
-RISK ASSESSMENT
---------------
-Risk Score: 97/100 - CRITICAL
-Flags: ETH Mixer, BTC CoinJoin, Cross-chain bridges, Multi-exchange deposits, BTC UTXO laundering
-
-TRANSACTION HASHES
------------------
-1. 0xabc123...def456 - Split (Ethereum)
-2. 0x789abc...123def - Split (Ethereum)
-3. 0xmix001...fed321 - Mixer / Tornado Cash (Ethereum)
-4. 0xbrg001...abc789 - Bridge (ETH→Polygon)
-5. 0xpost01...mix456 - Transfer (Ethereum)
-6. 0xpoly01...brg789 - Transfer (Polygon)
-7. 0xexch01...dep123 - Exchange Deposit / Binance (Ethereum)
-8. 0xarb001...brg456 - Bridge (Poly→Arb)
-9. 0xswap01...dex789 - DEX Swap (Arbitrum)
-10. 0xren01...btc789 - Bridge / RenBridge (Arb→Bitcoin)
-11. btc:a1b2c3...d4e5f6 - Mixer / Wasabi CoinJoin (Bitcoin)
-12. btc:f6e5d4...c3b2a1 - Exchange Deposit / Kraken (Bitcoin)
-
-EXCHANGE FREEZE REQUEST #1
---------------------------
-Target Exchange: Binance
-Wallet: 0xbin...hot1
-Amount: 4.8 ETH
-Chain: Ethereum
-Request: Immediate freeze pending investigation
-
-EXCHANGE FREEZE REQUEST #2
---------------------------
-Target Exchange: Kraken
-Wallet: bc1q...ex3p
-Amount: 0.25 BTC
-Chain: Bitcoin
-Request: Immediate freeze pending investigation — BTC deposited after CoinJoin mixing
-
-BITCOIN NETWORK ANALYSIS
-------------------------
-Entry Point: RenBridge cross-chain swap from Arbitrum
-BTC Received: 0.27 BTC at renBTC...v8k2
-Mixer Used: Wasabi Wallet CoinJoin (bc1q...m4x7)
-Post-Mix Output: 0.26 BTC (mixing fee: ~0.01 BTC)
-Final Destination: Kraken exchange deposit (bc1q...ex3p, 0.25 BTC)
-UTXO Analysis: Change address analysis confirmed output ownership
 
 This document was generated by ScamTrace and is integrity-verified.
     `.trim();
@@ -123,14 +141,18 @@ This document was generated by ScamTrace and is integrity-verified.
     URL.revokeObjectURL(url);
   };
 
+  const walletCount = caseEvidence.filter(e => e.type === 'wallet').length;
+  const domainCount = caseEvidence.filter(e => e.type === 'domain' || e.type === 'url').length;
+  const phoneCount = caseEvidence.filter(e => e.type === 'phone').length;
+
   const packetSections = [
     { icon: User, label: 'Victim Statement', detail: statement ? 'User-provided statement attached' : 'No statement provided — add one for stronger evidence' },
-    { icon: GitBranch, label: 'Wallet Graph', detail: '13 nodes, 12 edges, 5 chains (incl. Bitcoin)' },
-    { icon: Hash, label: 'Transaction Hashes', detail: '12 transaction hashes with timestamps (ETH + BTC)' },
-    { icon: Clock, label: 'Timeline', detail: 'Complete chronological event log' },
-    { icon: AlertTriangle, label: 'Risk Assessment', detail: 'AI-generated risk score: 97/100 CRITICAL (ETH + BTC)' },
-    { icon: Landmark, label: 'Exchange Contact Info', detail: 'Binance + Kraken compliance team contacts' },
-    { icon: Shield, label: 'Freeze Request Templates', detail: 'Pre-filled freeze requests for Binance (ETH) + Kraken (BTC)' },
+    { icon: GitBranch, label: 'Wallet Evidence', detail: walletCount > 0 ? `${walletCount} wallet address(es) from case evidence` : 'No wallet evidence — add wallets to your case' },
+    { icon: Hash, label: 'Domain/URL Evidence', detail: domainCount > 0 ? `${domainCount} domain(s)/URL(s) from case evidence` : 'No domain evidence' },
+    { icon: Clock, label: 'Case Timeline', detail: selectedCase ? `Created ${new Date(selectedCase.created_at).toLocaleDateString()}` : 'Select a case first' },
+    { icon: AlertTriangle, label: 'Case Details', detail: selectedCase ? `${selectedCase.scam_type} — $${selectedCase.total_loss?.toLocaleString() || 0} loss` : 'No case selected' },
+    { icon: Landmark, label: 'Contact Evidence', detail: phoneCount > 0 ? `${phoneCount} phone number(s) included` : 'No phone evidence' },
+    { icon: Shield, label: 'Evidence Summary', detail: `${caseEvidence.length} total evidence items from Supabase` },
     { icon: Lock, label: 'Evidence Integrity', detail: 'SHA-256 hash of complete evidence packet' },
   ];
 
@@ -176,24 +198,56 @@ This document was generated by ScamTrace and is integrity-verified.
             <div className="glass-card rounded-xl p-6">
               <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
                 <FileText className="h-5 w-5 text-cyber-blue" />
-                Investigation Summary
+                Select Case
               </h3>
-              <div className="space-y-3">
-                {[
-                  { label: 'Source Address', value: '0x7a250d...dEad', color: 'text-cyber-red' },
-                  { label: 'Total Amount', value: '12.5 ETH + 0.27 BTC (~$45,500)', color: 'text-white' },
-                  { label: 'Chains Involved', value: 'Ethereum, Bitcoin, Polygon, Arbitrum', color: 'text-cyber-blue' },
-                  { label: 'Mixers Detected', value: '2 (Tornado Cash + Wasabi CoinJoin)', color: 'text-cyber-orange' },
-                  { label: 'Bridges Used', value: '3 (Hop Protocol, RenBridge)', color: 'text-cyber-orange' },
-                  { label: 'Exchange Deposits', value: '2 (Binance + Kraken)', color: 'text-cyber-green' },
-                  { label: 'Investigation Date', value: new Date().toISOString().split('T')[0], color: 'text-slate-300' },
-                ].map(item => (
-                  <div key={item.label} className="flex items-center justify-between border-b border-white/5 pb-2">
-                    <span className="text-xs text-slate-400">{item.label}</span>
-                    <span className={`text-sm font-medium ${item.color} font-mono`}>{item.value}</span>
-                  </div>
-                ))}
-              </div>
+
+              {!user && (
+                <p className="text-sm text-slate-500 py-4 text-center">Sign in to load your cases and generate evidence packets.</p>
+              )}
+
+              {user && loadingCases && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-cyber-blue" />
+                </div>
+              )}
+
+              {user && !loadingCases && cases.length === 0 && (
+                <p className="text-sm text-slate-500 py-4 text-center">No cases found. Submit a scam report first.</p>
+              )}
+
+              {user && !loadingCases && cases.length > 0 && (
+                <div className="space-y-3">
+                  <select
+                    value={selectedCaseId}
+                    onChange={e => setSelectedCaseId(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-white/10 bg-dark-900 px-4 py-3 text-sm text-white outline-none focus:border-cyber-green/50 transition cursor-pointer"
+                  >
+                    <option value="">Select a case...</option>
+                    {cases.map(c => (
+                      <option key={c.id} value={c.id}>{c.title || c.scam_type} - ${c.total_loss?.toLocaleString() || 0}</option>
+                    ))}
+                  </select>
+
+                  {selectedCase && (
+                    <div className="space-y-2">
+                      {[
+                        { label: 'Case', value: selectedCase.title || selectedCase.scam_type, color: 'text-white' },
+                        { label: 'Type', value: selectedCase.scam_type, color: 'text-cyber-blue' },
+                        { label: 'Total Loss', value: `$${selectedCase.total_loss?.toLocaleString() || 0}`, color: 'text-cyber-red' },
+                        { label: 'Status', value: selectedCase.status, color: 'text-cyber-green' },
+                        { label: 'Evidence Items', value: String(caseEvidence.length), color: 'text-amber-400' },
+                        { label: 'Wallets', value: String(caseEvidence.filter(e => e.type === 'wallet').length), color: 'text-cyber-orange' },
+                        { label: 'Date', value: new Date(selectedCase.created_at).toLocaleDateString(), color: 'text-slate-300' },
+                      ].map(item => (
+                        <div key={item.label} className="flex items-center justify-between border-b border-white/5 pb-2">
+                          <span className="text-xs text-slate-400">{item.label}</span>
+                          <span className={`text-sm font-medium ${item.color} font-mono`}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <button
@@ -295,31 +349,21 @@ This document was generated by ScamTrace and is integrity-verified.
                   </p>
                 </div>
 
-                <div className="rounded-lg border border-cyber-orange/20 bg-cyber-orange/5 p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-cyber-orange">
-                    <Landmark className="h-4 w-4" />
-                    Binance Freeze Request Ready (4.8 ETH)
+                {selectedCase && (
+                  <div className="rounded-lg border border-cyber-orange/20 bg-cyber-orange/5 p-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-cyber-orange">
+                      <Landmark className="h-4 w-4" />
+                      Evidence Packet for: {selectedCase.title || selectedCase.scam_type}
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {caseEvidence.length} evidence items included. Loss: ${selectedCase.total_loss?.toLocaleString() || 0}.
+                      Download the packet and submit to relevant exchanges or law enforcement.
+                    </p>
+                    <button onClick={handleDownload} className="mt-2 flex items-center gap-1 text-xs font-medium text-cyber-orange hover:underline transition">
+                      Download Full Report <ArrowRight className="h-3 w-3" />
+                    </button>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">
-                    ETH deposit detected at Binance hot wallet. A pre-filled freeze request has been included.
-                  </p>
-                  <button className="mt-2 flex items-center gap-1 text-xs font-medium text-cyber-orange hover:underline transition">
-                    Send Freeze Request <ArrowRight className="h-3 w-3" />
-                  </button>
-                </div>
-
-                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-amber-400">
-                    <span className="text-base">₿</span>
-                    Kraken Freeze Request Ready (0.25 BTC)
-                  </div>
-                  <p className="mt-1 text-xs text-slate-400">
-                    BTC deposit detected at Kraken after Wasabi CoinJoin mixing. Freeze request includes UTXO analysis and CoinJoin output tracing.
-                  </p>
-                  <button className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-400 hover:underline transition">
-                    Send BTC Freeze Request <ArrowRight className="h-3 w-3" />
-                  </button>
-                </div>
+                )}
 
                 <div className="rounded-lg bg-dark-900 p-3 font-mono text-xs text-slate-500 space-y-1">
                   <div>Packet ID: {packetIdRef.current}</div>

@@ -132,6 +132,27 @@ export function extractEmails(text: string): ExtractedEntity[] {
 }
 
 /* ------------------------------------------------------------------ */
+/*  IP Extraction                                                      */
+/* ------------------------------------------------------------------ */
+
+const IP_REGEX = /\b(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\b/g;
+
+export function extractIPs(text: string): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const match of text.matchAll(IP_REGEX)) {
+    const val = match[0];
+    if (!seen.has(val)) {
+      seen.add(val);
+      result.push(val);
+    }
+  }
+
+  return result;
+}
+
+/* ------------------------------------------------------------------ */
 /*  All-in-one Extraction                                              */
 /* ------------------------------------------------------------------ */
 
