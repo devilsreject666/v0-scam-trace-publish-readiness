@@ -1,13 +1,92 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DollarSign, TrendingUp, Wallet, Globe, BarChart3,
-  ArrowRight, AlertTriangle, Shield, PieChart
+  ArrowRight, AlertTriangle, Shield, PieChart, Loader2
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 
 type TrackerView = 'overview' | 'wallet' | 'domain' | 'type';
 
+interface CaseStats {
+  totalLoss: number;
+  caseCount: number;
+  avgLoss: number;
+  openCases: number;
+  scamTypes: { type: string; count: number; loss: number }[];
+  walletEvidence: { value: string; count: number }[];
+  domainEvidence: { value: string; count: number }[];
+}
+
 export function MoneyTracker() {
+  const { user } = useAuth();
   const [view, setView] = useState<TrackerView>('overview');
+  const [stats, setStats] = useState<CaseStats | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+
+    async function fetchStats() {
+      try {
+        // Fetch cases
+        const { data: cases } = await supabase
+          .from('cases')
+          .select('id, title, status, scam_type, total_loss, created_at');
+
+        // Fetch evidence
+        const { data: evidence } = await supabase
+          .from('evidence')
+          .select('type, value, label');
+
+        const caseList = cases || [];
+        const evidenceList = evidence || [];
+
+        const totalLoss = caseList.reduce((s, c) => s + (c.total_loss || 0), 0);
+        const openCases = caseList.filter(c => c.status === 'open').length;
+        const avgLoss = caseList.length > 0 ? totalLoss / caseList.length : 0;
+
+        // Group by scam type
+        const typeMap = new Map<string, { count: number; loss: number }>();
+        for (const c of caseList) {
+          const type = c.scam_type || 'Other';
+          const existing = typeMap.get(type) || { count: 0, loss: 0 };
+          existing.count++;
+          existing.loss += c.total_loss || 0;
+          typeMap.set(type, existing);
+        }
+
+        // Group wallet evidence
+        const walletMap = new Map<string, number>();
+        const domainMap = new Map<string, number>();
+        for (const e of evidenceList) {
+          if (e.type === 'wallet') {
+            walletMap.set(e.value || e.label, (walletMap.get(e.value || e.label) || 0) + 1);
+          }
+          if (e.type === 'domain') {
+            domainMap.set(e.value || e.label, (domainMap.get(e.value || e.label) || 0) + 1);
+          }
+        }
+
+        setStats({
+          totalLoss,
+          caseCount: caseList.length,
+          avgLoss,
+          openCases,
+          scamTypes: [...typeMap.entries()].map(([type, data]) => ({ type, ...data })).sort((a, b) => b.loss - a.loss),
+          walletEvidence: [...walletMap.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count).slice(0, 5),
+          domainEvidence: [...domainMap.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count).slice(0, 5),
+        });
+      } catch {
+        // Supabase may not be configured
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, [user]);
 
   return (
     <section id="money-tracker" className="relative py-24 grid-bg">

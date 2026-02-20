@@ -4,6 +4,7 @@ import {
   Eye, XCircle, ArrowRight, Loader2, Timer, Zap, FileText,
   Copy, Activity, Wallet, Globe, ChevronDown, Info
 } from 'lucide-react';
+import { ethAddressAnalysis, btcAddressAnalysis } from '@/lib/api';
 
 type EscrowStep = 'input' | 'simulating' | 'review' | 'cooling' | 'confirm' | 'sent' | 'monitoring';
 
@@ -21,29 +22,6 @@ interface SimulationResult {
   flags: string[];
 }
 
-const mockSimulation: SimulationResult = {
-  destinationAge: '8 days',
-  pastScamActivity: true,
-  scamReports: 7,
-  mixerExposure: true,
-  bridgeActivity: true,
-  canWithdrawInstantly: true,
-  riskScore: 94,
-  riskLevel: 'critical',
-  estimatedRecovery: '<5%',
-  connectedClusters: 3,
-  flags: [
-    'Wallet is 8 days old — extremely suspicious for receiving large amounts',
-    'Connected to 3 known scam clusters in our database',
-    '7 prior scam reports from other victims',
-    'Funds from this wallet have passed through Tornado Cash (2 interactions)',
-    'Cross-chain bridge activity detected (ETH → Polygon → Arbitrum)',
-    'Funds can be withdrawn instantly — no time lock on destination',
-    'Similar address pattern to known pig-butchering operation wallets',
-    'Destination has received 45.2 ETH in last 48 hours from 12 unique senders',
-  ],
-};
-
 export function SmartContractEscrow() {
   const [step, setStep] = useState<EscrowStep>('input');
   const [address, setAddress] = useState('');
@@ -60,32 +38,76 @@ export function SmartContractEscrow() {
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const escrowIdRef = useRef('');
 
+  const [simError, setSimError] = useState('');
+
   const requiredConfirmText = 'Once sent, these funds may not be recoverable';
 
-  const handleSimulate = useCallback(() => {
-    if (!address.trim()) setAddress('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D');
-    if (!amount.trim()) setAmount('2.5');
+  const handleSimulate = useCallback(async () => {
+    if (!address.trim() || !amount.trim()) return;
     escrowIdRef.current = 'ESC-' + Date.now().toString(36).toUpperCase();
     setStep('simulating');
     setSimProgress(0);
-  }, [address, amount]);
+    setSimError('');
 
-  // Simulation progress
-  useEffect(() => {
-    if (step !== 'simulating') return;
+    // Animate progress while fetching
     const interval = setInterval(() => {
-      setSimProgress(p => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setSimulation(mockSimulation);
-          setTimeout(() => setStep('review'), 400);
-          return 100;
-        }
-        return p + 2;
+      setSimProgress(p => Math.min(p + 2, 90));
+    }, 60);
+
+    try {
+      const isEth = /^0x[a-fA-F0-9]{40}$/.test(address.trim());
+      const isBtc = /^(1|3|bc1)[a-zA-HJ-NP-Z0-9]{25,62}$/.test(address.trim());
+
+      let riskScore = 0;
+      let walletAge = 'Unknown';
+      let flags: string[] = [];
+      let mixerExposure = false;
+
+      if (isEth) {
+        const analysis = await ethAddressAnalysis(address.trim());
+        riskScore = analysis.riskScore;
+        walletAge = analysis.walletAge;
+        flags = analysis.flags;
+        mixerExposure = flags.some(f => /mixer|tumbler/i.test(f));
+      } else if (isBtc) {
+        const analysis = await btcAddressAnalysis(address.trim());
+        riskScore = analysis.riskScore;
+        walletAge = analysis.walletAge;
+        flags = analysis.flags;
+        mixerExposure = flags.some(f => /coinjoin|mixing/i.test(f));
+      } else {
+        throw new Error('Invalid address format. Enter a valid ETH or BTC address.');
+      }
+
+      clearInterval(interval);
+      setSimProgress(100);
+
+      const riskLevel: SimulationResult['riskLevel'] =
+        riskScore >= 70 ? 'critical' : riskScore >= 50 ? 'high' : riskScore >= 25 ? 'medium' : 'low';
+
+      const estimatedRecovery =
+        riskScore >= 70 ? '<5%' : riskScore >= 50 ? '10-20%' : riskScore >= 25 ? '30-50%' : '>60%';
+
+      setSimulation({
+        destinationAge: walletAge,
+        pastScamActivity: riskScore >= 50,
+        scamReports: 0,
+        mixerExposure,
+        bridgeActivity: false,
+        canWithdrawInstantly: true,
+        riskScore,
+        riskLevel,
+        estimatedRecovery,
+        connectedClusters: 0,
+        flags: flags.length > 0 ? flags : ['No significant risk indicators found for this address'],
       });
-    }, 50);
-    return () => clearInterval(interval);
-  }, [step]);
+      setTimeout(() => setStep('review'), 400);
+    } catch (err) {
+      clearInterval(interval);
+      setSimError(err instanceof Error ? err.message : 'Simulation failed.');
+      setStep('input');
+    }
+  }, [address, amount]);
 
   const handleStartCooldown = () => {
     setStep('cooling');
@@ -235,6 +257,12 @@ export function SmartContractEscrow() {
                   </div>
                 </div>
 
+                {simError && (
+                  <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {simError}
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <label className="text-xs text-slate-400 block mb-1.5">Network</label>
@@ -292,7 +320,8 @@ export function SmartContractEscrow() {
                 </div>
 
                 <button onClick={handleSimulate}
-                  className="mt-6 w-full rounded-xl bg-gradient-to-r from-cyber-green to-cyber-blue py-4 text-base font-bold text-dark-900 transition hover:shadow-lg hover:shadow-cyber-green/20 flex items-center justify-center gap-2">
+                  disabled={!address.trim() || !amount.trim()}
+                  className="mt-6 w-full rounded-xl bg-gradient-to-r from-cyber-green to-cyber-blue py-4 text-base font-bold text-dark-900 transition hover:shadow-lg hover:shadow-cyber-green/20 flex items-center justify-center gap-2 disabled:opacity-50">
                   <Eye className="h-5 w-5" /> Simulate Transaction
                 </button>
               </div>

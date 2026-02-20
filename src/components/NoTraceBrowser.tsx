@@ -1,75 +1,93 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   Globe, Shield, Lock, AlertTriangle, Search, Camera,
   FileText, Code, ExternalLink, RefreshCw, X, ChevronLeft,
   ChevronRight, CheckCircle2, Eye, Loader2
 } from 'lucide-react';
+import { whoisLookup, ipLookup, resolveHostIP, calculateDomainRisk } from '@/lib/api';
 
 interface PageCapture {
   url: string;
-  title: string;
-  scripts: string[];
-  links: string[];
-  malwareDetected: boolean;
+  domain: string;
+  registrar: string;
+  registeredDate: string;
+  domainAge: string;
+  hostingIp: string;
+  hostingLocation: string;
+  hostingProvider: string;
   riskScore: number;
   flags: string[];
+  whoisPrivacy: boolean;
   timestamp: string;
 }
-
-const mockCapture: PageCapture = {
-  url: 'https://crypto-invest-returns.xyz',
-  title: 'CryptoInvest Pro — Guaranteed 300% Returns',
-  scripts: [
-    'analytics.js — Google Analytics (tracking)',
-    'wallet-connect-fake.js — SUSPICIOUS: Wallet drainer script detected',
-    'form-capture.js — MALICIOUS: Keylogger / credential harvester',
-    'obfuscated-7x9k.js — CRITICAL: Heavily obfuscated, communicates with C2 server',
-    'popup.js — Fake urgency timer script',
-  ],
-  links: [
-    'https://binance-secure-verify.com — PHISHING',
-    'https://t.me/cryptoinvest_manager — Telegram group',
-    'https://api.crypto-invest-returns.xyz/withdraw — Fake API endpoint',
-  ],
-  malwareDetected: true,
-  riskScore: 98,
-  flags: [
-    'Wallet drainer script detected — attempts to sign malicious transactions',
-    'Keylogger active — captures form inputs including passwords and seed phrases',
-    'Obfuscated JavaScript communicates with known C2 server (185.220.101.42)',
-    'Fake countdown timer creates artificial urgency',
-    'Content impersonates Binance and CoinBase',
-    'No legitimate business registration found',
-    'SSL certificate from free provider (Let\'s Encrypt)',
-  ],
-  timestamp: new Date().toISOString(),
-};
 
 export function NoTraceBrowser() {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [capture, setCapture] = useState<PageCapture | null>(null);
-  const [showCode, setShowCode] = useState(false);
   const [captured, setCaptured] = useState(false);
-  const [activePanel, setActivePanel] = useState<'preview' | 'scripts' | 'links'>('preview');
+  const [activePanel, setActivePanel] = useState<'whois' | 'hosting' | 'risk'>('whois');
   const urlRef = useRef('');
+  const [error, setError] = useState('');
 
-  const handleNavigate = () => {
-    const targetUrl = url.trim() || 'https://crypto-invest-returns.xyz';
+  const handleNavigate = useCallback(async () => {
+    const targetUrl = url.trim();
+    if (!targetUrl) return;
     setUrl(targetUrl);
     urlRef.current = targetUrl;
     setLoading(true);
     setLoaded(false);
     setCapture(null);
     setCaptured(false);
+    setError('');
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // Extract domain from URL
+      let domain = targetUrl;
+      try { domain = new URL(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`).hostname; }
+      catch { domain = targetUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, ''); }
+      domain = domain.replace(/^www\./, '');
+
+      // Parallel WHOIS + IP resolution
+      const [whois, hostIp] = await Promise.all([
+        whoisLookup(domain),
+        resolveHostIP(domain),
+      ]);
+
+      let hostingIp = hostIp || 'Could not resolve';
+      let hostingLocation = 'Unknown';
+      let hostingProvider = 'Unknown';
+
+      if (hostIp) {
+        const ipData = await ipLookup(hostIp);
+        hostingLocation = `${ipData.city}, ${ipData.country}`;
+        hostingProvider = ipData.org;
+      }
+
+      const risk = calculateDomainRisk(whois);
+
+      setCapture({
+        url: targetUrl,
+        domain: whois.domain,
+        registrar: whois.registrar,
+        registeredDate: whois.registeredDate,
+        domainAge: whois.domainAge,
+        hostingIp,
+        hostingLocation,
+        hostingProvider,
+        riskScore: risk.riskScore,
+        flags: risk.flags,
+        whoisPrivacy: whois.whoisPrivacy,
+        timestamp: new Date().toISOString(),
+      });
       setLoaded(true);
-      setCapture({ ...mockCapture, url: targetUrl, timestamp: new Date().toISOString() });
-    }, 2500);
-  };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to analyze URL.');
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
 
   const handleCapture = () => {
     setCaptured(true);
@@ -187,26 +205,38 @@ export function NoTraceBrowser() {
                 </div>
               )}
 
+              {/* Error */}
+              {error && !loading && (
+                <div className="p-4">
+                  <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {error}
+                  </div>
+                </div>
+              )}
+
               {loaded && capture && (
                 <div className="animate-fade-in">
-                  {/* Malware warning banner */}
-                  {capture.malwareDetected && (
-                    <div className="border-b border-red-500/20 bg-red-500/10 px-4 py-3 flex items-center gap-3">
-                      <AlertTriangle className="h-5 w-5 text-cyber-red flex-shrink-0" />
-                      <div className="flex-grow">
-                        <span className="text-sm font-bold text-red-400">⚠️ MALWARE DETECTED — </span>
-                        <span className="text-sm text-slate-300">Wallet drainer, keylogger, and C2 communication found in page scripts</span>
-                      </div>
-                      <span className="rounded-full bg-red-500/20 px-2.5 py-0.5 text-xs font-bold text-red-400">RISK: {capture.riskScore}/100</span>
+                  {/* Risk banner */}
+                  <div className={`border-b px-4 py-3 flex items-center gap-3 ${
+                    capture.riskScore >= 60 ? 'border-red-500/20 bg-red-500/10' : capture.riskScore >= 30 ? 'border-orange-500/20 bg-orange-500/10' : 'border-green-500/20 bg-green-500/10'
+                  }`}>
+                    <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${capture.riskScore >= 60 ? 'text-cyber-red' : capture.riskScore >= 30 ? 'text-orange-400' : 'text-green-400'}`} />
+                    <div className="flex-grow">
+                      <span className={`text-sm font-bold ${capture.riskScore >= 60 ? 'text-red-400' : capture.riskScore >= 30 ? 'text-orange-400' : 'text-green-400'}`}>
+                        {capture.riskScore >= 60 ? 'HIGH RISK' : capture.riskScore >= 30 ? 'MEDIUM RISK' : 'LOW RISK'} — </span>
+                      <span className="text-sm text-slate-300">Domain: {capture.domain} | Age: {capture.domainAge} | Registrar: {capture.registrar}</span>
                     </div>
-                  )}
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${capture.riskScore >= 60 ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                      RISK: {capture.riskScore}/100
+                    </span>
+                  </div>
 
                   {/* Tabs */}
                   <div className="border-b border-white/5 px-4 flex items-center gap-1 overflow-x-auto">
                     {([
-                      { key: 'preview' as const, label: 'Page Preview', icon: Eye },
-                      { key: 'scripts' as const, label: `Scripts (${capture.scripts.length})`, icon: Code },
-                      { key: 'links' as const, label: `Links (${capture.links.length})`, icon: ExternalLink },
+                      { key: 'whois' as const, label: 'WHOIS Data', icon: Globe },
+                      { key: 'hosting' as const, label: 'Hosting Info', icon: ExternalLink },
+                      { key: 'risk' as const, label: `Risk Flags (${capture.flags.length})`, icon: AlertTriangle },
                     ]).map(tab => (
                       <button
                         key={tab.key}
@@ -224,126 +254,66 @@ export function NoTraceBrowser() {
                   </div>
 
                   <div className="p-4">
-                    {/* Preview */}
-                    {activePanel === 'preview' && (
+                    {/* WHOIS */}
+                    {activePanel === 'whois' && (
                       <div className="space-y-4">
-                        {/* Simulated page render */}
-                        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 relative overflow-hidden">
-                          <div className="absolute top-2 right-2 rounded-full bg-red-500/10 border border-red-500/20 px-2 py-0.5 text-[9px] font-bold text-red-400">
-                            SANDBOXED RENDER
-                          </div>
-                          <div className="max-w-md mx-auto text-center space-y-4">
-                            <div className="text-2xl font-bold text-white">🚀 CryptoInvest Pro</div>
-                            <div className="text-sm text-amber-400 font-bold">GUARANTEED 300% RETURNS IN 14 DAYS</div>
-                            <div className="rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-4">
-                              <div className="text-xs text-slate-400">⏰ LIMITED TIME — Only 3 spots remaining!</div>
-                              <div className="text-2xl font-mono font-bold text-red-400 mt-2">23:59:47</div>
-                              <div className="text-[10px] text-slate-500 mt-1">(Fake countdown — resets on reload)</div>
-                            </div>
-                            <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400">
-                              ⚠️ This page contains a wallet drainer that attempts to steal your crypto when you connect
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Page metadata */}
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="rounded-lg bg-white/[0.02] border border-white/5 p-3">
-                            <div className="text-xs text-slate-500 mb-1">Page Title</div>
-                            <div className="text-sm text-white font-mono">{capture.title}</div>
-                          </div>
-                          <div className="rounded-lg bg-white/[0.02] border border-white/5 p-3">
-                            <div className="text-xs text-slate-500 mb-1">URL</div>
-                            <div className="text-sm text-cyber-red font-mono truncate">{capture.url}</div>
-                          </div>
+                          {[
+                            { label: 'Domain', value: capture.domain },
+                            { label: 'URL Analyzed', value: capture.url },
+                            { label: 'Registrar', value: capture.registrar },
+                            { label: 'Registered', value: capture.registeredDate },
+                            { label: 'Domain Age', value: capture.domainAge },
+                            { label: 'WHOIS Privacy', value: capture.whoisPrivacy ? 'Enabled' : 'Disabled' },
+                          ].map(item => (
+                            <div key={item.label} className="rounded-lg bg-white/[0.02] border border-white/5 p-3">
+                              <div className="text-xs text-slate-500 mb-1">{item.label}</div>
+                              <div className="text-sm text-white font-mono truncate">{item.value}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="rounded-lg bg-dark-900/50 border border-white/5 p-3">
+                          <div className="text-xs text-slate-500 mb-1">Scanned at</div>
+                          <div className="text-xs text-slate-300 font-mono">{new Date(capture.timestamp).toLocaleString()}</div>
                         </div>
                       </div>
                     )}
 
-                    {/* Scripts */}
-                    {activePanel === 'scripts' && (
-                      <div className="space-y-2">
-                        <div className="text-xs text-slate-400 mb-3">Detected JavaScript — scripts analyzed but NOT executed:</div>
-                        {capture.scripts.map((script, i) => {
-                          const isMalicious = script.includes('SUSPICIOUS') || script.includes('MALICIOUS') || script.includes('CRITICAL');
-                          return (
-                            <div key={i} className={`flex items-start gap-3 rounded-lg border p-3 ${
-                              isMalicious ? 'border-red-500/20 bg-red-500/[0.03]' : 'border-white/5 bg-white/[0.02]'
-                            }`}>
-                              <Code className={`h-4 w-4 flex-shrink-0 mt-0.5 ${isMalicious ? 'text-cyber-red' : 'text-slate-500'}`} />
-                              <div>
-                                <code className="text-xs text-slate-300 font-mono">{script}</code>
-                              </div>
-                              {isMalicious && (
-                                <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[9px] font-bold text-red-400 flex-shrink-0">THREAT</span>
-                              )}
+                    {/* Hosting */}
+                    {activePanel === 'hosting' && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          {[
+                            { label: 'Hosting IP', value: capture.hostingIp },
+                            { label: 'Location', value: capture.hostingLocation },
+                            { label: 'Provider', value: capture.hostingProvider },
+                          ].map(item => (
+                            <div key={item.label} className="rounded-lg bg-white/[0.02] border border-white/5 p-3">
+                              <div className="text-xs text-slate-500 mb-1">{item.label}</div>
+                              <div className="text-sm text-white font-mono">{item.value}</div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Links */}
-                    {activePanel === 'links' && (
-                      <div className="space-y-2">
-                        <div className="text-xs text-slate-400 mb-3">Outbound links found on page:</div>
-                        {capture.links.map((link, i) => {
-                          const isPhishing = link.includes('PHISHING');
-                          return (
-                            <div key={i} className={`flex items-center gap-3 rounded-lg border p-3 ${
-                              isPhishing ? 'border-red-500/20 bg-red-500/[0.03]' : 'border-white/5 bg-white/[0.02]'
-                            }`}>
-                              <ExternalLink className={`h-4 w-4 flex-shrink-0 ${isPhishing ? 'text-cyber-red' : 'text-slate-500'}`} />
-                              <code className="text-xs text-slate-300 font-mono flex-grow truncate">{link}</code>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Risk flags */}
-                  <div className="border-t border-white/5 px-4 py-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-red-400" />
-                        Risk Analysis ({capture.flags.length} threats)
-                      </h4>
-                      <button onClick={() => setShowCode(!showCode)} className="text-xs text-cyber-purple hover:underline flex items-center gap-1">
-                        <Code className="h-3 w-3" /> {showCode ? 'Hide' : 'View'} Page Source
-                      </button>
-                    </div>
-
-                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
-                      {capture.flags.map((flag, i) => (
-                        <div key={i} className="flex items-start gap-2 text-xs">
-                          <X className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-slate-300">{flag}</span>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                        <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.03] p-3 text-xs text-slate-400">
+                          <span className="text-amber-400 font-medium">Note:</span> Full script analysis requires server-side scanning. WHOIS and IP intelligence data shown above is real-time from who-dat and ipquery.io APIs.
+                        </div>
+                      </div>
+                    )}
 
-                    {showCode && (
-                      <div className="mt-4 rounded-lg bg-dark-900 border border-white/5 p-4 max-h-[200px] overflow-auto">
-                        <pre className="text-[10px] text-slate-500 font-mono whitespace-pre-wrap">{`<!DOCTYPE html>
-<html>
-<head>
-  <title>${capture.title}</title>
-  <script src="wallet-connect-fake.js"></script> <!-- WALLET DRAINER -->
-  <script src="form-capture.js"></script> <!-- KEYLOGGER -->
-  <script src="obfuscated-7x9k.js"></script> <!-- C2 COMMS -->
-</head>
-<body>
-  <div class="scam-page">
-    <h1>GUARANTEED 300% RETURNS</h1>
-    <div id="fake-timer">23:59:47</div>
-    <button onclick="drainWallet()">Connect Wallet</button>
-    <form action="/steal-creds" method="POST">
-      <input name="seed_phrase" placeholder="Enter seed phrase" />
-    </form>
-  </div>
-</body>
-</html>`}</pre>
+                    {/* Risk Flags */}
+                    {activePanel === 'risk' && (
+                      <div className="space-y-2">
+                        {capture.flags.length > 0 ? capture.flags.map((flag, i) => (
+                          <div key={i} className="flex items-start gap-2 rounded-lg bg-red-500/[0.03] border border-red-500/10 p-3">
+                            <X className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-xs text-slate-300">{flag}</span>
+                          </div>
+                        )) : (
+                          <div className="flex items-center gap-2 rounded-lg bg-green-500/[0.03] border border-green-500/10 p-4">
+                            <CheckCircle2 className="h-4 w-4 text-green-400" />
+                            <span className="text-xs text-slate-300">No significant risk indicators found.</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
