@@ -722,18 +722,23 @@ export function ChatEvidencePortal() {
                 <div className="glass-card rounded-xl p-6">
                   <h3 className="flex items-center gap-2 text-lg font-bold text-white mb-6">
                     <Clock className="h-5 w-5 text-cyber-green" />
-                    Scam Progression Timeline
+                    Extracted Entity Timeline
                   </h3>
                   <div className="relative pl-8">
                     <div className="absolute left-3 top-0 bottom-0 w-px bg-gradient-to-b from-cyber-green via-cyber-orange to-cyber-red" />
-                    {[
-                      { time: '10:23 AM', event: 'Initial Contact', detail: 'Scammer initiated contact with unsolicited investment pitch. Used urgency and promise of 300% returns — classic pig butchering indicator.', risk: 'medium', type: 'tactic' },
-                      { time: '10:26 AM', event: 'Phishing URL Shared', detail: 'Scammer shared fake platform URL: crypto-invest-returns.xyz (12-day old domain, Russian registrar).', risk: 'critical', type: 'url' },
-                      { time: '10:30 AM', event: 'Crypto Addresses Provided', detail: '3 wallet addresses shared (ETH, BTC, TRON). All linked to known scam campaigns in our database.', risk: 'critical', type: 'wallet' },
-                      { time: '10:36 AM', event: 'Contact Info Shared', detail: 'Scammer provided VoIP phone number and ProtonMail email. Both linked to prior fraud reports.', risk: 'high', type: 'contact' },
-                      { time: '10:38 AM', event: 'Phishing Attempt', detail: 'Binance impersonation phishing link shared (binance-secure-verify.com). Credential harvesting detected.', risk: 'critical', type: 'url' },
-                      { time: '10:43 AM', event: 'Pressure Tactics', detail: 'Artificial urgency deployed: "expires today", fake social proof ("500 people made $50K"). FOMO manipulation.', risk: 'high', type: 'tactic' },
-                    ].map((event, idx) => (
+                    {(realEntities.length > 0 ? realEntities.map((ent, i) => ({
+                      time: `Entity ${i + 1}`,
+                      event: ent.type === 'wallet' ? 'Crypto Address Found' : ent.type === 'url' ? 'URL/Domain Found' : ent.type === 'phone' ? 'Phone Number Found' : ent.type === 'email' ? 'Email Found' : 'IP Address Found',
+                      detail: `${ent.detail} — Value: ${ent.value}`,
+                      risk: ent.risk === 'critical' ? 'critical' : ent.risk === 'high' ? 'high' : 'medium',
+                      type: ent.type,
+                    })) : [{
+                      time: '-',
+                      event: 'No entities found',
+                      detail: 'Paste chat text containing wallet addresses, URLs, phone numbers, or emails and run the analysis.',
+                      risk: 'medium',
+                      type: 'info',
+                    }]).map((event, idx) => (
                       <div key={idx} className="relative mb-6 last:mb-0">
                         <div className={`absolute -left-5 top-1 h-3 w-3 rounded-full border-2 ${
                           event.risk === 'critical' ? 'border-red-400 bg-red-500/30' :
