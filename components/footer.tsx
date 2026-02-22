@@ -15,8 +15,8 @@ export function Footer() {
               Ready to start monitoring?
             </h3>
             <p className="mt-3 max-w-xl text-sm text-muted">
-              Join thousands of users documenting and reporting crypto fraud.
-              Start with our free plan — no credit card required.
+              Start documenting and reporting crypto fraud today.
+              Free plan available — no credit card required.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <Link

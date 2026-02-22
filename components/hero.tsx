@@ -67,47 +67,47 @@ const terminalLines = [
     delay: 0,
   },
   {
-    text: "[SCAN] Tracing address across 16 blockchains...",
+    text: "[SCAN] Querying Etherscan API for address history...",
     color: "text-muted",
     prefix: "text-cyber-blue",
     prefixText: "[INFO]",
     delay: 800,
   },
   {
-    text: "[CHAT] Analyzing conversation... 3 wallets, 2 URLs extracted",
+    text: "[ETH] Balance: 4.821 ETH -- 142 transactions found",
     color: "text-muted",
     prefix: "text-accent",
-    prefixText: "[CHAT]",
+    prefixText: "[ETH]",
     delay: 1600,
   },
   {
-    text: "[OSINT] Domain crypto-invest-returns.xyz -- 12 days old, CRITICAL risk",
+    text: "[RISK] High transaction velocity detected -- 38 txns in 24h",
     color: "text-muted",
     prefix: "text-blue-400",
-    prefixText: "[OSINT]",
+    prefixText: "[RISK]",
     delay: 2400,
   },
   {
-    text: "[ALERT] 3 mixer interactions: Tornado Cash + Wasabi CoinJoin detected",
+    text: "[ALERT] Wallet age under 7 days -- abnormal volume spike",
     color: "text-muted",
     prefix: "text-cyber-orange",
     prefixText: "[ALERT]",
     delay: 3200,
   },
   {
-    text: "[CRITICAL] Exchange deposits: Binance (4.8 ETH) + Kraken (0.25 BTC)",
+    text: "[CRITICAL] 3 risk indicators flagged -- risk score: 87/100",
     color: "text-muted",
     prefix: "text-cyber-red",
     prefixText: "[CRITICAL]",
     delay: 4000,
   },
   {
-    text: "Evidence packet generated -- chat logs, OSINT, wallet graph included",
+    text: "Scan saved to dashboard -- evidence export available",
     color: "text-cyber-green",
     delay: 5000,
   },
   {
-    text: "Freeze requests ready for Binance + Kraken -- 2 exchanges flagged",
+    text: "Cooling-off protection enabled -- 30 min hold active",
     color: "text-cyber-green",
     delay: 5600,
   },
@@ -170,9 +170,9 @@ export function Hero() {
           className="mt-6 max-w-2xl text-center text-lg text-muted sm:text-xl animate-fade-in-up opacity-0 delay-200"
           style={{ animationFillMode: "forwards" }}
         >
-          AI-powered transaction monitoring and forensic documentation. Trace
-          fund movements across chains, identify mixer & bridge activity, and
-          auto-generate evidence packets — no blockchain expertise required.
+          Blockchain transaction monitoring and fraud documentation. Scan ETH
+          and BTC addresses in real-time, flag risk indicators, and build
+          structured evidence for investigation — no blockchain expertise required.
         </p>
 
         <div

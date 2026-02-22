@@ -10,7 +10,7 @@ import {
   Star,
   Lock,
   CreditCard,
-  Smartphone,
+
 } from "lucide-react";
 import { Disclaimer } from "./disclaimer";
 import { PLANS } from "@/lib/plans";
@@ -43,11 +43,10 @@ const plans = [
     color: "from-cyber-green to-emerald-500",
     features: [
       `${PLANS.starter.scans} address scans per month`,
-      "AI-powered risk analysis",
-      "5 blockchains supported",
+      "Risk indicator analysis",
+      "ETH & BTC blockchain support",
       "Evidence templates",
-      "1 domain check per day",
-      "1 phone lookup per day",
+      "Scan history dashboard",
       "Email support",
     ],
     cta: "Start 14-Day Free Trial",
@@ -63,13 +62,12 @@ const plans = [
     color: "from-cyber-blue to-blue-400",
     features: [
       "Unlimited address scans",
-      "16+ blockchains (incl. BTC)",
-      "Fund flow visualization",
+      "ETH & BTC blockchain support",
+      "Transaction history analysis",
       "Scam report submission",
-      "Monitoring dashboard",
-      "Unlimited domain checks",
-      "Chat evidence portal (5/mo)",
-      "Evidence exports",
+      "Full monitoring dashboard",
+      "Cooling-off protection",
+      "Evidence exports (PDF)",
       "Priority support",
     ],
     cta: "Start 14-Day Free Trial",
@@ -85,15 +83,13 @@ const plans = [
     color: "from-accent to-blue-300",
     features: [
       "Everything in Pro",
-      "Unlimited chat evidence uploads",
-      "Telegram & WhatsApp integration",
+      "Unlimited scans & reports",
+      "Advanced risk indicators",
       "Auto evidence packet generation",
-      "Exchange freeze templates",
-      "Smart Contract Escrow",
-      "ScamTrace Wallet",
-      "Real-time post-send monitoring",
-      "BTC UTXO deep analysis",
-      "API access",
+      "Case management dashboard",
+      "Cooling-off with custom delays",
+      "Full scan history & exports",
+      "BTC & ETH deep analysis",
       "Dedicated support",
     ],
     cta: "Start Investigation",
@@ -263,8 +259,8 @@ export function Pricing() {
               Secured by Stripe
             </div>
             <div className="flex items-center gap-1.5">
-              <Smartphone className="h-3.5 w-3.5" />
-              {"iOS & Android ready"}
+              <Shield className="h-3.5 w-3.5" />
+              {"Real-time blockchain data"}
             </div>
             <div className="flex items-center gap-1.5">
               <Shield className="h-3.5 w-3.5" />

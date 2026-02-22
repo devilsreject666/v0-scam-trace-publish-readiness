@@ -27,12 +27,12 @@ const coreFeatures = [
     title: "Discover",
     subtitle: "Identify High-Risk Targets Instantly",
     description:
-      "Surface critical leads in seconds with plain-language, AI-powered insights. Instantly triage any crypto address, domain, or phone number and highlight cross-chain links to illicit activity.",
+      "Surface critical leads in seconds. Instantly triage any ETH or BTC wallet address with real-time risk indicators drawn from live blockchain data via Etherscan and Blockstream APIs.",
     bullets: [
-      "AI-powered risk scoring for any address",
-      "Cross-chain link detection (ETH, BTC & more)",
-      "Domain WHOIS & phone number intelligence",
-      "Telegram/WhatsApp chat analysis",
+      "Real-time risk scoring for ETH & BTC addresses",
+      "Transaction history analysis",
+      "Balance and activity monitoring",
+      "Risk indicator detection (velocity, age, volume)",
     ],
   },
   {
@@ -43,12 +43,12 @@ const coreFeatures = [
     title: "Analyze",
     subtitle: "Trace Funds Across Chains in Real-Time",
     description:
-      "Follow the money across blockchains including Bitcoin, Ethereum, and more. Navigate mixers, bridges, swaps, and smart contracts with automated analysis.",
+      "Follow the money on Bitcoin and Ethereum. View transaction histories, balances, and activity patterns to trace fund movements between addresses.",
     bullets: [
-      "Multi-chain tracing (BTC, ETH, Polygon & more)",
-      "BTC CoinJoin & ETH mixer detection",
-      "Network visualization with UTXO flow",
-      "Entity identification & clustering",
+      "ETH & BTC transaction tracing",
+      "Address balance and activity history",
+      "Transaction flow analysis",
+      "Pluggable provider architecture for future chains",
     ],
   },
   {
@@ -59,12 +59,12 @@ const coreFeatures = [
     title: "Pursue",
     subtitle: "Turn Intelligence Into Impact",
     description:
-      "Strengthen cases and disrupt illicit activity. Auto-generate freeze-ready evidence packets with timestamped wallet graphs, transaction hashes, chat evidence, and user statements.",
+      "Strengthen cases with structured evidence. Create scam reports with attached scan results, transaction data, and case timelines stored in your Supabase-backed database.",
     bullets: [
-      "Freeze-ready evidence packets",
-      "Chat & OSINT evidence integration",
-      "Exchange contact automation",
-      "Court-admissible documentation",
+      "Case-linked scan history",
+      "Scam report submission with evidence",
+      "Timeline and narrative documentation",
+      "Evidence export capabilities",
     ],
   },
 ];
@@ -77,7 +77,7 @@ const tools = [
     borderHover: "hover:border-cyber-green/20",
     title: "Wallet Scan",
     description:
-      "Reveal risk indicators from any wallet address. Uncovers balances and illicit links across blockchains — including Bitcoin and Ethereum.",
+      "Reveal risk indicators from any ETH or BTC wallet address. Live balance checks, transaction history, and automated risk scoring via Etherscan and Blockstream APIs.",
     href: "/scan",
   },
   {
@@ -85,9 +85,9 @@ const tools = [
     color: "text-accent",
     bg: "bg-accent/10",
     borderHover: "hover:border-accent/20",
-    title: "Chat Evidence Portal",
+    title: "Scam Report Submission",
     description:
-      "Upload scam conversations. AI extracts wallet addresses, URLs, phone numbers, emails, and builds a prosecution-ready timeline automatically.",
+      "Submit detailed scam reports with structured evidence. Attach wallet addresses, transaction details, and narrative timelines to build documented cases.",
     href: "/report",
   },
   {
@@ -95,9 +95,9 @@ const tools = [
     color: "text-blue-400",
     bg: "bg-blue-400/10",
     borderHover: "hover:border-blue-400/20",
-    title: "Domain Checker",
+    title: "Risk Indicator Engine",
     description:
-      "Instant WHOIS lookup, domain age analysis, hosting provider, SSL certificate inspection, DNS records, and cross-reference against scam databases.",
+      "Automated risk scoring based on real blockchain data: transaction velocity, wallet age, volume spikes, and interaction with flagged addresses.",
     href: "/scan",
   },
   {
@@ -115,9 +115,9 @@ const tools = [
     color: "text-cyber-orange",
     bg: "bg-cyber-orange/10",
     borderHover: "hover:border-cyber-orange/20",
-    title: "Scam Shield Wallet",
+    title: "Scan History Dashboard",
     description:
-      "Integrated multi-chain wallet (BTC, ETH & more) that tracks every coin sent. Even as scammers split, mix, or bridge funds, every movement is logged.",
+      "All your wallet scans stored and searchable. Track addresses over time, compare risk scores across scans, and export results for case documentation.",
     href: "/scan",
   },
   {
@@ -127,7 +127,7 @@ const tools = [
     borderHover: "hover:border-accent/20",
     title: "Evidence Builder",
     description:
-      "Auto-generate comprehensive evidence packets with timestamped wallet graphs, chat evidence, OSINT data, transaction hashes, and user statements.",
+      "Generate structured evidence packets with scan results, transaction hashes, risk indicators, and case timelines. Export data for reporting purposes.",
     href: "/dashboard/cases",
   },
   {
@@ -135,9 +135,9 @@ const tools = [
     color: "text-cyber-blue",
     bg: "bg-cyber-blue/10",
     borderHover: "hover:border-cyber-blue/20",
-    title: "Real-Time Monitoring",
+    title: "Case Management",
     description:
-      "Proactively detect and monitor crypto threats. Track emerging activity in real-time and get alerts when flagged addresses make moves on any chain.",
+      "Organize investigations with case management. Link scans, reports, evidence, and timelines together for structured investigation workflows.",
     href: "/dashboard",
   },
   {
@@ -145,9 +145,9 @@ const tools = [
     color: "text-pink-400",
     bg: "bg-pink-400/10",
     borderHover: "hover:border-pink-400/20",
-    title: "AI Investigation Engine",
+    title: "Extensible Provider System",
     description:
-      "Advanced ML models trained on millions of illicit transactions. Automatically classifies patterns, detects social engineering, and predicts fund movement.",
+      "Pluggable blockchain provider architecture. Currently supports Etherscan (ETH) and Blockstream (BTC), with interface ready for Chainalysis, Elliptic, and TRM Labs.",
     href: "/scan",
   },
   {
@@ -155,9 +155,9 @@ const tools = [
     color: "text-cyber-red",
     bg: "bg-cyber-red/10",
     borderHover: "hover:border-cyber-red/20",
-    title: "Smart Alerts",
+    title: "Plan-Based Rate Limiting",
     description:
-      "Instant notifications when tracked funds hit exchange wallets, interact with mixers, or cross bridges. Never miss a critical moment.",
+      "Scan allowances enforced per plan: Free (3/mo), Starter (25/mo), Pro and Investigator (unlimited). Usage tracked in real-time via your dashboard.",
     href: "/dashboard",
   },
 ];
@@ -182,9 +182,9 @@ export function Features() {
             <span className="gradient-text">Documentation</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
-            A complete monitoring workflow that transforms raw blockchain data,
-            chat evidence, and OSINT intelligence into actionable insights and
-            documented evidence.
+            A complete monitoring workflow that transforms raw blockchain data
+            into actionable risk insights and documented evidence using live
+            Etherscan and Blockstream APIs.
           </p>
         </div>
 
