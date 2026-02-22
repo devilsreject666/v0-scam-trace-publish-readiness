@@ -197,10 +197,10 @@ export function Hero() {
           style={{ animationFillMode: "forwards" }}
         >
           {[
-            "SOC 2 Compliant",
-            "GDPR Ready",
-            "End-to-End Encrypted",
-            "Offline Wallet Scan",
+            "Real-time Data",
+            "Etherscan Powered",
+            "Blockstream Verified",
+            "Supabase Auth",
           ].map((badge) => (
             <div
               key={badge}
@@ -214,10 +214,10 @@ export function Hero() {
 
         <div className="mt-16 grid w-full max-w-4xl grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { value: 45, suffix: "+", label: "Wallets Supported", icon: Shield },
-            { value: 16, suffix: "+", label: "Blockchains", icon: Globe },
-            { value: 3, prefix: "<", suffix: "s", label: "Triage Speed", icon: Zap },
-            { value: 24, suffix: "/7", label: "Real-time Monitoring", icon: Eye },
+            { value: 2, suffix: "", label: "Chains Supported", icon: Shield },
+            { value: 2, suffix: "", label: "API Providers", icon: Globe },
+            { value: 3, prefix: "<", suffix: "s", label: "Scan Speed", icon: Zap },
+            { value: 24, suffix: "/7", label: "Always Available", icon: Eye },
           ].map((stat) => (
             <div
               key={stat.label}
