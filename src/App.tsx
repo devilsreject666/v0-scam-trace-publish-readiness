@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { SubscriptionProvider } from '@/context/SubscriptionContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { Features } from './components/Features';
@@ -24,8 +25,9 @@ import { RequestDemo } from './components/RequestDemo';
 import { LawEnforcement } from './components/LawEnforcement';
 import { CompliancePage } from './components/CompliancePage';
 import { CaseDashboard } from './components/CaseDashboard';
+import WalletAnalyzer from './components/WalletAnalyzer';
 
-type Page = 'home' | 'law-enforcement' | 'compliance' | 'dashboard';
+type Page = 'home' | 'law-enforcement' | 'compliance' | 'dashboard' | 'analyzer';
 
 function AppContent() {
   const { user } = useAuth();
@@ -67,6 +69,10 @@ function AppContent() {
 
       {page === 'dashboard' && user && (
         <CaseDashboard />
+      )}
+
+      {page === 'analyzer' && (
+        <WalletAnalyzer />
       )}
 
       {page === 'home' && (
@@ -116,7 +122,9 @@ function AppContent() {
 export function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <SubscriptionProvider>
+        <AppContent />
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Menu, X, ChevronDown, LogOut, Scale, FileText } from 'lucide-react';
+import { Shield, Menu, X, ChevronDown, LogOut, Scale, FileText, Network } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface NavbarProps {
@@ -98,6 +98,10 @@ export function Navbar({ onSignIn, onSignUp, onRequestDemo, onNavigate }: Navbar
                   className="rounded-lg px-3 py-2 text-sm text-cyber-green hover:bg-cyber-green/10 transition flex items-center gap-1.5">
                   <FileText className="h-3.5 w-3.5" /> My Cases
                 </button>
+                <button onClick={() => onNavigate?.('analyzer')}
+                  className="rounded-lg px-3 py-2 text-sm text-cyber-blue hover:bg-cyber-blue/10 transition flex items-center gap-1.5">
+                  <Network className="h-3.5 w-3.5" /> Analyzer
+                </button>
                 <div className="flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-cyber-green to-cyber-blue text-[10px] font-bold text-dark-900">
                     {avatar}
@@ -161,6 +165,10 @@ export function Navbar({ onSignIn, onSignUp, onRequestDemo, onNavigate }: Navbar
                   <button onClick={() => { onNavigate?.('dashboard'); setMobileOpen(false); }}
                     className="block w-full text-left rounded-lg px-3 py-2.5 text-sm text-cyber-green hover:bg-white/5">
                     My Cases
+                  </button>
+                  <button onClick={() => { onNavigate?.('analyzer'); setMobileOpen(false); }}
+                    className="block w-full text-left rounded-lg px-3 py-2.5 text-sm text-cyber-blue hover:bg-white/5">
+                    Wallet Analyzer
                   </button>
                   <div className="flex items-center justify-between px-3">
                     <div className="flex items-center gap-2 text-sm text-white">
