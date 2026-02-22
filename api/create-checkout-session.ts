@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { productId, yearly } = req.body;
+    const { productId, yearly, userId, email } = req.body;
 
     const product = PRODUCTS.find((p) => p.id === productId);
     if (!product) {
@@ -58,6 +58,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const session = await stripe.checkout.sessions.create({
       ui_mode: 'embedded',
       redirect_on_completion: 'never',
+      customer_email: email || undefined,
+      metadata: {
+        product_id: product.id,
+        user_id: userId || '',
+      },
+      subscription_data: {
+        metadata: {
+          product_id: product.id,
+          user_id: userId || '',
+        },
+      },
       line_items: [
         {
           price_data: {
