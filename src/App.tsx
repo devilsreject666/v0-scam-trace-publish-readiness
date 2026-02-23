@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -109,6 +110,7 @@ function AppContent() {
         isOpen={demoOpen}
         onClose={() => setDemoOpen(false)}
       />
+      <SpeedInsights />
     </div>
   );
 }
@@ -117,6 +119,7 @@ export function App() {
   return (
     <AuthProvider>
       <AppContent />
+      <SpeedInsights />
     </AuthProvider>
   );
 }
