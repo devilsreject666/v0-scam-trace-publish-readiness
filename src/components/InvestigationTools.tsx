@@ -4,143 +4,16 @@ import {
   Lock, Server, MapPin, Wifi, ExternalLink,
   Loader2, Copy, ArrowRight, Eye, Hash, Activity
 } from 'lucide-react';
+import {
+  lookupDomain,
+  lookupIp,
+  lookupPhone,
+  type DomainResult,
+  type IpResult,
+  type PhoneResult,
+} from '@/lib/api';
 
 type ToolTab = 'domain' | 'phone' | 'ip';
-
-interface DomainResult {
-  domain: string;
-  registrar: string;
-  registeredDate: string;
-  expiryDate: string;
-  domainAge: string;
-  nameservers: string[];
-  registrantCountry: string;
-  registrantOrg: string;
-  ssl: { issuer: string; valid: boolean; grade: string; expiry: string };
-  hosting: { provider: string; ip: string; location: string; asn: string };
-  riskScore: number;
-  flags: string[];
-  scamReports: number;
-  phishing: boolean;
-  whoisPrivacy: boolean;
-}
-
-interface PhoneResult {
-  number: string;
-  carrier: string;
-  type: string;
-  country: string;
-  region: string;
-  city: string;
-  timezone: string;
-  isVoip: boolean;
-  isPrepaid: boolean;
-  riskScore: number;
-  scamReports: number;
-  flags: string[];
-  recentActivity: string[];
-  linkedPlatforms: string[];
-}
-
-interface IpResult {
-  ip: string;
-  country: string;
-  region: string;
-  city: string;
-  isp: string;
-  org: string;
-  asn: string;
-  isVpn: boolean;
-  isProxy: boolean;
-  isTor: boolean;
-  isHosting: boolean;
-  riskScore: number;
-  flags: string[];
-  abuseReports: number;
-  lat: number;
-  lng: number;
-}
-
-const mockDomainResult: DomainResult = {
-  domain: 'crypto-invest-returns.xyz',
-  registrar: 'NameSilo LLC',
-  registeredDate: '2024-01-03',
-  expiryDate: '2025-01-03',
-  domainAge: '12 days',
-  nameservers: ['ns1.hostinger.com', 'ns2.hostinger.com'],
-  registrantCountry: 'Russia',
-  registrantOrg: 'REDACTED FOR PRIVACY',
-  ssl: { issuer: "Let's Encrypt", valid: true, grade: 'B', expiry: '2024-04-02' },
-  hosting: { provider: 'Hostinger International', ip: '185.220.101.42', location: 'Lithuania', asn: 'AS47583' },
-  riskScore: 94,
-  flags: [
-    'Domain age under 30 days — HIGH RISK',
-    'Registered with WHOIS privacy — common in scam sites',
-    'Free SSL certificate (Let\'s Encrypt) — legitimate sites use paid SSL',
-    '.xyz TLD commonly used for throwaway scam domains',
-    'Hosting in Lithuania, registrant in Russia — geographic mismatch',
-    'Similar to 8 known phishing domains in our database',
-    'No DMARC/SPF records configured',
-    'Content matches known crypto investment scam templates',
-  ],
-  scamReports: 23,
-  phishing: true,
-  whoisPrivacy: true,
-};
-
-const mockPhoneResult: PhoneResult = {
-  number: '+1 (332) 555-0147',
-  carrier: 'TextNow (VoIP)',
-  type: 'VoIP / Virtual',
-  country: 'United States',
-  region: 'New York',
-  city: 'New York City',
-  timezone: 'America/New_York (EST)',
-  isVoip: true,
-  isPrepaid: false,
-  riskScore: 87,
-  scamReports: 4,
-  flags: [
-    'VoIP number — commonly used for disposable fraud communications',
-    'TextNow carrier — free VoIP service, no identity verification required',
-    '4 prior scam reports linked to this number',
-    'Number active for only 18 days',
-    'Used across multiple messaging platforms',
-    'Geographic location doesn\'t match claimed business address',
-  ],
-  recentActivity: [
-    'Reported for crypto investment scam — Jan 12, 2024',
-    'Reported for impersonation fraud — Jan 10, 2024',
-    'Used in WhatsApp scam group — Jan 8, 2024',
-    'First seen in scam database — Jan 3, 2024',
-  ],
-  linkedPlatforms: ['WhatsApp', 'Telegram', 'TextNow'],
-};
-
-const mockIpResult: IpResult = {
-  ip: '185.220.101.42',
-  country: 'Germany',
-  region: 'Hessen',
-  city: 'Frankfurt am Main',
-  isp: 'Tor Exit Node',
-  org: 'Zwiebelfreunde e.V.',
-  asn: 'AS205100',
-  isVpn: false,
-  isProxy: true,
-  isTor: true,
-  isHosting: false,
-  riskScore: 92,
-  flags: [
-    'Tor exit node — used for anonymized traffic',
-    'Known abuse reports associated with this IP',
-    'IP listed in 3 threat intelligence feeds',
-    'Proxy/anonymizer detected',
-    'Associated with malicious scanning activity',
-  ],
-  abuseReports: 147,
-  lat: 50.1109,
-  lng: 8.6821,
-};
 
 export function InvestigationTools() {
   const [activeTab, setActiveTab] = useState<ToolTab>('domain');
@@ -148,48 +21,62 @@ export function InvestigationTools() {
   const [phoneInput, setPhoneInput] = useState('');
   const [ipInput, setIpInput] = useState('');
   const [scanning, setScanning] = useState(false);
-  const [scanProgress, setScanProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const [domainResult, setDomainResult] = useState<DomainResult | null>(null);
   const [phoneResult, setPhoneResult] = useState<PhoneResult | null>(null);
   const [ipResult, setIpResult] = useState<IpResult | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const runScan = useCallback((type: ToolTab) => {
+  const handleDomainScan = useCallback(async () => {
+    const input = domainInput.trim() || 'crypto-invest-returns.xyz';
+    setDomainInput(input);
     setScanning(true);
-    setScanProgress(0);
-    if (type === 'domain') setDomainResult(null);
-    if (type === 'phone') setPhoneResult(null);
-    if (type === 'ip') setIpResult(null);
+    setError(null);
+    setDomainResult(null);
+    
+    try {
+      const result = await lookupDomain(input);
+      setDomainResult(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to lookup domain');
+    } finally {
+      setScanning(false);
+    }
+  }, [domainInput]);
 
-    const interval = setInterval(() => {
-      setScanProgress(p => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setScanning(false);
-          if (type === 'domain') setDomainResult(mockDomainResult);
-          if (type === 'phone') setPhoneResult(mockPhoneResult);
-          if (type === 'ip') setIpResult(mockIpResult);
-          return 100;
-        }
-        return p + 3;
-      });
-    }, 50);
-  }, []);
+  const handlePhoneScan = useCallback(async () => {
+    const input = phoneInput.trim() || '+1 332 555 0147';
+    setPhoneInput(input);
+    setScanning(true);
+    setError(null);
+    setPhoneResult(null);
+    
+    try {
+      const result = await lookupPhone(input);
+      setPhoneResult(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to lookup phone number');
+    } finally {
+      setScanning(false);
+    }
+  }, [phoneInput]);
 
-  const handleDomainScan = () => {
-    if (!domainInput.trim()) setDomainInput('crypto-invest-returns.xyz');
-    runScan('domain');
-  };
-
-  const handlePhoneScan = () => {
-    if (!phoneInput.trim()) setPhoneInput('+1 (332) 555-0147');
-    runScan('phone');
-  };
-
-  const handleIpScan = () => {
-    if (!ipInput.trim()) setIpInput('185.220.101.42');
-    runScan('ip');
-  };
+  const handleIpScan = useCallback(async () => {
+    const input = ipInput.trim() || '185.220.101.42';
+    setIpInput(input);
+    setScanning(true);
+    setError(null);
+    setIpResult(null);
+    
+    try {
+      const result = await lookupIp(input);
+      setIpResult(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to lookup IP address');
+    } finally {
+      setScanning(false);
+    }
+  }, [ipInput]);
 
   const copyText = (text: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -223,7 +110,10 @@ export function InvestigationTools() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-400">
             Instantly investigate suspicious domains, phone numbers, and IP addresses.
-            Get WHOIS data, hosting info, carrier details, VPN detection, and scam database cross-referencing.
+            Real WHOIS data, hosting info, carrier details, VPN detection, and threat analysis.
+          </p>
+          <p className="mx-auto mt-2 max-w-xl text-sm text-cyber-green">
+            Powered by free, open-source APIs: RDAP, ipapi.co, URLhaus, and more.
           </p>
         </div>
 
@@ -236,7 +126,7 @@ export function InvestigationTools() {
           ]).map(tab => (
             <button
               key={tab.key}
-              onClick={() => { setActiveTab(tab.key); }}
+              onClick={() => { setActiveTab(tab.key); setError(null); }}
               className={`flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-medium transition-all ${
                 activeTab === tab.key
                   ? 'bg-white/10 text-white border border-white/10 shadow-lg'
@@ -248,6 +138,14 @@ export function InvestigationTools() {
             </button>
           ))}
         </div>
+
+        {/* Error display */}
+        {error && (
+          <div className="mx-auto max-w-2xl mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            {error}
+          </div>
+        )}
 
         {/* ==================== DOMAIN CHECKER ==================== */}
         {activeTab === 'domain' && (
@@ -276,14 +174,9 @@ export function InvestigationTools() {
                 </button>
               </div>
               {scanning && activeTab === 'domain' && (
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
-                    <span>Querying WHOIS, SSL, DNS, and threat databases...</span>
-                    <span>{scanProgress}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-dark-700">
-                    <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-100" style={{ width: `${scanProgress}%` }} />
-                  </div>
+                <div className="mt-3 text-xs text-slate-400 flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Querying RDAP, DNS, and IP geolocation APIs...
                 </div>
               )}
             </div>
@@ -306,7 +199,7 @@ export function InvestigationTools() {
                           </span>
                         </div>
                         <p className="mt-1 text-sm text-slate-400">
-                          {domainResult.scamReports} scam reports • {domainResult.phishing ? '⚠️ Known phishing site' : 'No phishing detected'}
+                          Age: {domainResult.domainAge} {domainResult.phishing ? '| Potential phishing site' : ''}
                         </p>
                       </div>
                     </div>
@@ -329,10 +222,10 @@ export function InvestigationTools() {
                         { label: 'Registrar', value: domainResult.registrar },
                         { label: 'Registered', value: domainResult.registeredDate },
                         { label: 'Expires', value: domainResult.expiryDate },
-                        { label: 'Domain Age', value: domainResult.domainAge, highlight: true },
+                        { label: 'Domain Age', value: domainResult.domainAge, highlight: domainResult.domainAge?.includes('days') },
                         { label: 'Country', value: domainResult.registrantCountry },
                         { label: 'Organization', value: domainResult.registrantOrg },
-                        { label: 'WHOIS Privacy', value: domainResult.whoisPrivacy ? '⚠️ Enabled' : 'Disabled' },
+                        { label: 'WHOIS Privacy', value: domainResult.whoisPrivacy ? 'Enabled' : 'Disabled' },
                       ].map(item => (
                         <div key={item.label} className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
                           <span className="text-slate-400">{item.label}</span>
@@ -342,32 +235,15 @@ export function InvestigationTools() {
                     </div>
                   </div>
 
-                  {/* SSL */}
+                  {/* Hosting */}
                   <div className="glass-card rounded-xl p-5">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
-                      <Lock className="h-4 w-4 text-green-400" /> SSL Certificate
-                    </h4>
-                    <div className="space-y-3">
-                      {[
-                        { label: 'Issuer', value: domainResult.ssl.issuer },
-                        { label: 'Valid', value: domainResult.ssl.valid ? '✓ Valid' : '✕ Invalid' },
-                        { label: 'Grade', value: domainResult.ssl.grade },
-                        { label: 'Expires', value: domainResult.ssl.expiry },
-                      ].map(item => (
-                        <div key={item.label} className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
-                          <span className="text-slate-400">{item.label}</span>
-                          <span className="text-white font-mono">{item.value}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3 mt-6">
-                      <Server className="h-4 w-4 text-purple-400" /> Hosting
+                      <Server className="h-4 w-4 text-purple-400" /> Hosting & DNS
                     </h4>
                     <div className="space-y-3">
                       {[
                         { label: 'Provider', value: domainResult.hosting.provider },
-                        { label: 'IP Address', value: domainResult.hosting.ip },
+                        { label: 'IP Address', value: domainResult.hosting.ip || 'Unknown' },
                         { label: 'Location', value: domainResult.hosting.location },
                         { label: 'ASN', value: domainResult.hosting.asn },
                       ].map(item => (
@@ -377,6 +253,19 @@ export function InvestigationTools() {
                         </div>
                       ))}
                     </div>
+
+                    {domainResult.nameservers.length > 0 && (
+                      <>
+                        <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3 mt-6">
+                          <Lock className="h-4 w-4 text-green-400" /> Nameservers
+                        </h4>
+                        <div className="space-y-1">
+                          {domainResult.nameservers.map((ns, i) => (
+                            <div key={i} className="text-xs text-slate-400 font-mono">{ns}</div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Risk Flags */}
@@ -384,18 +273,25 @@ export function InvestigationTools() {
                     <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
                       <AlertTriangle className="h-4 w-4 text-red-400" /> Risk Indicators ({domainResult.flags.length})
                     </h4>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {domainResult.flags.map((flag, idx) => (
-                        <div key={idx} className="flex items-start gap-2 rounded-lg bg-red-500/[0.03] border border-red-500/10 p-2.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-xs text-slate-300">{flag}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {domainResult.flags.length > 0 ? (
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {domainResult.flags.map((flag, idx) => (
+                          <div key={idx} className="flex items-start gap-2 rounded-lg bg-red-500/[0.03] border border-red-500/10 p-2.5">
+                            <AlertTriangle className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-xs text-slate-300">{flag}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-green-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        No major risk indicators detected
+                      </div>
+                    )}
                     <div className="mt-4 rounded-lg bg-dark-900/50 p-3">
                       <div className="flex items-center gap-2 text-xs">
                         <Eye className="h-3.5 w-3.5 text-slate-500" />
-                        <span className="text-slate-400">DNS: {domainResult.nameservers.join(', ')}</span>
+                        <span className="text-slate-400">Data from RDAP (free, real-time)</span>
                       </div>
                     </div>
                   </div>
@@ -431,14 +327,9 @@ export function InvestigationTools() {
                 </button>
               </div>
               {scanning && activeTab === 'phone' && (
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
-                    <span>Querying carrier data, scam databases, and threat feeds...</span>
-                    <span>{scanProgress}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-dark-700">
-                    <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-100" style={{ width: `${scanProgress}%` }} />
-                  </div>
+                <div className="mt-3 text-xs text-slate-400 flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Analyzing phone number patterns and carrier data...
                 </div>
               )}
             </div>
@@ -460,7 +351,7 @@ export function InvestigationTools() {
                           </span>
                         </div>
                         <p className="mt-1 text-sm text-slate-400">
-                          {phoneResult.carrier} • {phoneResult.scamReports} scam reports • {phoneResult.isVoip ? '⚠️ VoIP Number' : 'Landline/Mobile'}
+                          {phoneResult.carrier} | {phoneResult.country} | {phoneResult.isVoip ? 'VoIP Number' : phoneResult.type}
                         </p>
                       </div>
                     </div>
@@ -470,39 +361,25 @@ export function InvestigationTools() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2">
                   {/* Carrier info */}
                   <div className="glass-card rounded-xl p-5">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
-                      <Phone className="h-4 w-4 text-green-400" /> Carrier Information
+                      <Phone className="h-4 w-4 text-green-400" /> Phone Information
                     </h4>
                     <div className="space-y-3">
                       {[
+                        { label: 'Number', value: phoneResult.number },
                         { label: 'Carrier', value: phoneResult.carrier },
                         { label: 'Type', value: phoneResult.type, highlight: phoneResult.isVoip },
-                        { label: 'VoIP', value: phoneResult.isVoip ? '⚠️ Yes — Disposable' : 'No' },
-                        { label: 'Prepaid', value: phoneResult.isPrepaid ? '⚠️ Yes' : 'No' },
+                        { label: 'VoIP', value: phoneResult.isVoip ? 'Yes - Disposable' : 'No' },
+                        { label: 'Country', value: phoneResult.country },
+                        { label: 'Country Code', value: phoneResult.countryCode },
+                        { label: 'Valid Format', value: phoneResult.valid ? 'Yes' : 'Invalid' },
                       ].map(item => (
                         <div key={item.label} className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
                           <span className="text-slate-400">{item.label}</span>
                           <span className={`font-mono ${item.highlight ? 'text-cyber-red font-medium' : 'text-white'}`}>{item.value}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-3 mt-6">
-                      <MapPin className="h-4 w-4 text-cyan-400" /> Location
-                    </h4>
-                    <div className="space-y-3">
-                      {[
-                        { label: 'Country', value: phoneResult.country },
-                        { label: 'Region', value: phoneResult.region },
-                        { label: 'City', value: phoneResult.city },
-                        { label: 'Timezone', value: phoneResult.timezone },
-                      ].map(item => (
-                        <div key={item.label} className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
-                          <span className="text-slate-400">{item.label}</span>
-                          <span className="text-white font-mono">{item.value}</span>
                         </div>
                       ))}
                     </div>
@@ -511,45 +388,27 @@ export function InvestigationTools() {
                   {/* Risk flags */}
                   <div className="glass-card rounded-xl p-5">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
-                      <AlertTriangle className="h-4 w-4 text-orange-400" /> Risk Indicators ({phoneResult.flags.length})
+                      <AlertTriangle className="h-4 w-4 text-orange-400" /> Risk Indicators
                     </h4>
-                    <div className="space-y-2">
-                      {phoneResult.flags.map((flag, idx) => (
-                        <div key={idx} className="flex items-start gap-2 rounded-lg bg-orange-500/[0.03] border border-orange-500/10 p-2.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-orange-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-xs text-slate-300">{flag}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="text-xs font-medium text-slate-400 mb-2">Linked Platforms</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {phoneResult.linkedPlatforms.map(p => (
-                          <span key={p} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-medium text-white">{p}</span>
+                    {phoneResult.flags.length > 0 ? (
+                      <div className="space-y-2">
+                        {phoneResult.flags.map((flag, idx) => (
+                          <div key={idx} className="flex items-start gap-2 rounded-lg bg-orange-500/[0.03] border border-orange-500/10 p-2.5">
+                            <AlertTriangle className="h-3.5 w-3.5 text-orange-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-xs text-slate-300">{flag}</span>
+                          </div>
                         ))}
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Recent activity */}
-                  <div className="glass-card rounded-xl p-5 md:col-span-2 lg:col-span-1">
-                    <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
-                      <Activity className="h-4 w-4 text-cyan-400" /> Scam Reports & Activity
-                    </h4>
-                    <div className="relative pl-6">
-                      <div className="absolute left-2 top-0 bottom-0 w-px bg-gradient-to-b from-orange-400 to-red-400 opacity-30" />
-                      {phoneResult.recentActivity.map((activity, idx) => (
-                        <div key={idx} className="relative mb-4 last:mb-0">
-                          <div className="absolute -left-4 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-orange-400 bg-dark-900" />
-                          <p className="text-xs text-slate-300">{activity}</p>
-                        </div>
-                      ))}
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-green-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        No major risk indicators detected
+                      </div>
+                    )}
 
                     <div className="mt-4 rounded-lg border border-cyber-green/20 bg-cyber-green/5 p-3">
                       <p className="text-xs text-slate-400">
-                        <span className="text-cyber-green font-medium">Tip:</span> Add this number to your evidence packet. VoIP numbers are commonly used by scammers for disposable communications.
+                        <span className="text-cyber-green font-medium">Note:</span> Phone analysis uses pattern matching. VoIP numbers are commonly used by scammers for disposable communications.
                       </p>
                     </div>
                   </div>
@@ -585,14 +444,9 @@ export function InvestigationTools() {
                 </button>
               </div>
               {scanning && activeTab === 'ip' && (
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs text-slate-400 mb-1">
-                    <span>Querying geolocation, ASN, VPN/proxy detection, and abuse databases...</span>
-                    <span>{scanProgress}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-dark-700">
-                    <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-violet-500 transition-all duration-100" style={{ width: `${scanProgress}%` }} />
-                  </div>
+                <div className="mt-3 text-xs text-slate-400 flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Querying ipapi.co for geolocation and network data...
                 </div>
               )}
             </div>
@@ -614,9 +468,10 @@ export function InvestigationTools() {
                           </span>
                           {ipResult.isTor && <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-400">TOR EXIT</span>}
                           {ipResult.isVpn && <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold text-orange-400">VPN</span>}
+                          {ipResult.isHosting && <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">DATACENTER</span>}
                         </div>
                         <p className="mt-1 text-sm text-slate-400">
-                          {ipResult.isp} • {ipResult.abuseReports} abuse reports • {ipResult.city}, {ipResult.country}
+                          {ipResult.isp} | {ipResult.city}, {ipResult.country}
                         </p>
                       </div>
                     </div>
@@ -635,10 +490,11 @@ export function InvestigationTools() {
                     </h4>
                     <div className="space-y-3">
                       {[
-                        { label: 'Country', value: ipResult.country },
+                        { label: 'Country', value: `${ipResult.country} (${ipResult.countryCode})` },
                         { label: 'Region', value: ipResult.region },
                         { label: 'City', value: ipResult.city },
-                        { label: 'Coordinates', value: `${ipResult.lat}, ${ipResult.lng}` },
+                        { label: 'Timezone', value: ipResult.timezone },
+                        { label: 'Coordinates', value: `${ipResult.lat.toFixed(4)}, ${ipResult.lng.toFixed(4)}` },
                       ].map(item => (
                         <div key={item.label} className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
                           <span className="text-slate-400">{item.label}</span>
@@ -648,10 +504,10 @@ export function InvestigationTools() {
                     </div>
 
                     {/* Map placeholder */}
-                    <div className="mt-4 rounded-lg bg-dark-900/50 border border-white/5 p-8 text-center">
+                    <div className="mt-4 rounded-lg bg-dark-900/50 border border-white/5 p-6 text-center">
                       <MapPin className="mx-auto h-8 w-8 text-slate-600 mb-2" />
                       <p className="text-xs text-slate-500">{ipResult.city}, {ipResult.country}</p>
-                      <p className="text-[10px] text-slate-600 mt-1">{ipResult.lat}°N, {ipResult.lng}°E</p>
+                      <p className="text-[10px] text-slate-600 mt-1">{ipResult.lat.toFixed(4)}N, {ipResult.lng.toFixed(4)}E</p>
                     </div>
                   </div>
 
@@ -665,11 +521,10 @@ export function InvestigationTools() {
                         { label: 'ISP', value: ipResult.isp },
                         { label: 'Organization', value: ipResult.org },
                         { label: 'ASN', value: ipResult.asn },
-                        { label: 'VPN', value: ipResult.isVpn ? '⚠️ Detected' : '✓ Not detected' },
-                        { label: 'Proxy', value: ipResult.isProxy ? '⚠️ Detected' : '✓ Not detected' },
-                        { label: 'Tor', value: ipResult.isTor ? '⚠️ Exit Node' : '✓ Not detected' },
-                        { label: 'Hosting', value: ipResult.isHosting ? 'Data Center' : 'Residential' },
-                        { label: 'Abuse Reports', value: String(ipResult.abuseReports) },
+                        { label: 'VPN', value: ipResult.isVpn ? 'Detected' : 'Not detected' },
+                        { label: 'Proxy', value: ipResult.isProxy ? 'Detected' : 'Not detected' },
+                        { label: 'Tor', value: ipResult.isTor ? 'Exit Node' : 'Not detected' },
+                        { label: 'Type', value: ipResult.isHosting ? 'Datacenter/Hosting' : 'Residential' },
                       ].map(item => (
                         <div key={item.label} className="flex justify-between items-center text-xs border-b border-white/5 pb-2">
                           <span className="text-slate-400">{item.label}</span>
@@ -684,14 +539,21 @@ export function InvestigationTools() {
                     <h4 className="flex items-center gap-2 text-sm font-bold text-white mb-4">
                       <AlertTriangle className="h-4 w-4 text-red-400" /> Threat Indicators
                     </h4>
-                    <div className="space-y-2">
-                      {ipResult.flags.map((flag, idx) => (
-                        <div key={idx} className="flex items-start gap-2 rounded-lg bg-red-500/[0.03] border border-red-500/10 p-2.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-xs text-slate-300">{flag}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {ipResult.flags.length > 0 ? (
+                      <div className="space-y-2">
+                        {ipResult.flags.map((flag, idx) => (
+                          <div key={idx} className="flex items-start gap-2 rounded-lg bg-red-500/[0.03] border border-red-500/10 p-2.5">
+                            <AlertTriangle className="h-3.5 w-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+                            <span className="text-xs text-slate-300">{flag}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-green-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        No major threat indicators detected
+                      </div>
+                    )}
 
                     <div className="mt-4 flex gap-2">
                       <a href="#evidence" className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-cyber-green/10 border border-cyber-green/20 px-3 py-2 text-xs font-medium text-cyber-green hover:bg-cyber-green/20 transition">

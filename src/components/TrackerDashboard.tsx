@@ -4,6 +4,17 @@ import {
   GitBranch, Shuffle, ArrowLeftRight, Landmark, Clock, Shield,
   Loader2, RefreshCw
 } from 'lucide-react';
+import {
+  lookupEthAddress,
+  lookupBtcAddress,
+  detectChain,
+  formatAddress,
+  satToBtc,
+  weiToEth,
+  type EthTransaction,
+  type BtcTransaction,
+  type WalletBalance,
+} from '@/lib/api';
 
 interface WalletNode {
   id: string;
@@ -152,6 +163,14 @@ export function TrackerDashboard() {
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'graph' | 'transactions' | 'alerts'>('graph');
   const [visibleNodes, setVisibleNodes] = useState(0);
+  
+  // Real API data
+  const [realBalance, setRealBalance] = useState<WalletBalance | null>(null);
+  const [realEthTxs, setRealEthTxs] = useState<EthTransaction[]>([]);
+  const [realBtcTxs, setRealBtcTxs] = useState<BtcTransaction[]>([]);
+  const [detectedChain, setDetectedChain] = useState<'eth' | 'btc' | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [useLiveData, setUseLiveData] = useState(true);
 
   // Chain names scanned during progress animation
   const scanChains = [
@@ -160,16 +179,43 @@ export function TrackerDashboard() {
     'Cardano', 'Cosmos', 'Polkadot', 'Near', 'Base', 'Bitcoin Lightning'
   ];
 
-  const handleScan = useCallback(() => {
+  const handleScan = useCallback(async () => {
+    const searchAddress = address.trim() || '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D';
     if (!address.trim()) {
-      setAddress('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488dEad');
+      setAddress(searchAddress);
     }
+    
     setIsScanning(true);
     setScanComplete(false);
     setScanProgress(0);
     setSelectedNode(null);
     setVisibleNodes(0);
-  }, [address]);
+    setApiError(null);
+    setRealBalance(null);
+    setRealEthTxs([]);
+    setRealBtcTxs([]);
+    
+    // Detect chain type
+    const detected = detectChain(searchAddress);
+    setDetectedChain(detected?.chain || null);
+    
+    // If live data is enabled and we have a valid address, fetch real data
+    if (useLiveData && detected) {
+      try {
+        if (detected.chain === 'eth' && detected.type === 'address') {
+          const { balance, transactions } = await lookupEthAddress(searchAddress);
+          setRealBalance(balance);
+          setRealEthTxs(transactions);
+        } else if (detected.chain === 'btc' && detected.type === 'address') {
+          const { balance, transactions } = await lookupBtcAddress(searchAddress);
+          setRealBalance(balance);
+          setRealBtcTxs(transactions);
+        }
+      } catch (err) {
+        setApiError(err instanceof Error ? err.message : 'Failed to fetch blockchain data');
+      }
+    }
+  }, [address, useLiveData]);
 
   useEffect(() => {
     if (!isScanning) return;
@@ -234,6 +280,31 @@ export function TrackerDashboard() {
 
         {/* Search bar */}
         <div className="mx-auto mb-10 max-w-3xl">
+          {/* Live data toggle */}
+          <div className="mb-4 flex items-center justify-center gap-4">
+            <button
+              onClick={() => setUseLiveData(true)}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium transition ${
+                useLiveData 
+                  ? 'bg-cyber-green/10 text-cyber-green border border-cyber-green/20' 
+                  : 'text-slate-400 hover:text-white border border-transparent'
+              }`}
+            >
+              <div className={`h-2 w-2 rounded-full ${useLiveData ? 'bg-cyber-green animate-pulse' : 'bg-slate-600'}`} />
+              Live Blockchain Data
+            </button>
+            <button
+              onClick={() => setUseLiveData(false)}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium transition ${
+                !useLiveData 
+                  ? 'bg-cyber-blue/10 text-cyber-blue border border-cyber-blue/20' 
+                  : 'text-slate-400 hover:text-white border border-transparent'
+              }`}
+            >
+              Demo Data
+            </button>
+          </div>
+
           <div className="relative flex items-center gap-2">
             <div className="relative flex-grow">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
@@ -255,6 +326,13 @@ export function TrackerDashboard() {
               {isScanning ? 'Scanning...' : 'Trace'}
             </button>
           </div>
+          
+          {/* API status indicator */}
+          {useLiveData && (
+            <div className="mt-3 text-xs text-slate-500 text-center">
+              Powered by Etherscan API (ETH) and Blockstream API (BTC) - Free, real-time blockchain data
+            </div>
+          )}
 
           {/* Progress bar */}
           {isScanning && (
@@ -293,6 +371,33 @@ export function TrackerDashboard() {
             </div>
           )}
         </div>
+
+        {/* API Error display */}
+        {apiError && (
+          <div className="mx-auto max-w-3xl mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            {apiError}
+          </div>
+        )}
+
+        {/* Real balance display when using live data */}
+        {useLiveData && realBalance && scanComplete && (
+          <div className="mx-auto max-w-3xl mb-6 glass-card-premium rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-slate-400">Live Balance</div>
+                <div className="text-2xl font-bold text-white">
+                  {realBalance.balance} <span className={detectedChain === 'btc' ? 'text-amber-400' : 'text-blue-400'}>{detectedChain === 'btc' ? 'BTC' : 'ETH'}</span>
+                </div>
+                <div className="text-xs text-slate-500 font-mono mt-1">{formatAddress(realBalance.address)}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-slate-400">Transactions</div>
+                <div className="text-xl font-bold text-cyber-green">{realBalance.txCount?.toLocaleString() || 0}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Dashboard */}
         {scanComplete && (

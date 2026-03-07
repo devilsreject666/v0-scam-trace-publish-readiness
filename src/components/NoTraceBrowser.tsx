@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   Globe, Shield, Lock, AlertTriangle, Search, Camera,
   FileText, Code, ExternalLink, RefreshCw, X, ChevronLeft,
   ChevronRight, CheckCircle2, Eye, Loader2
 } from 'lucide-react';
+import { scanUrl, lookupDomain, type UrlScanResult, type DomainResult } from '@/lib/api';
 
 interface PageCapture {
   url: string;
@@ -54,8 +55,13 @@ export function NoTraceBrowser() {
   const [captured, setCaptured] = useState(false);
   const [activePanel, setActivePanel] = useState<'preview' | 'scripts' | 'links'>('preview');
   const urlRef = useRef('');
+  
+  // Real API data
+  const [urlScanResult, setUrlScanResult] = useState<UrlScanResult | null>(null);
+  const [domainInfo, setDomainInfo] = useState<DomainResult | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const handleNavigate = () => {
+  const handleNavigate = useCallback(async () => {
     const targetUrl = url.trim() || 'https://crypto-invest-returns.xyz';
     setUrl(targetUrl);
     urlRef.current = targetUrl;
@@ -63,13 +69,76 @@ export function NoTraceBrowser() {
     setLoaded(false);
     setCapture(null);
     setCaptured(false);
+    setApiError(null);
+    setUrlScanResult(null);
+    setDomainInfo(null);
 
-    setTimeout(() => {
+    try {
+      // Run real URL scanning and domain lookup in parallel
+      const [urlResult, domainResult] = await Promise.allSettled([
+        scanUrl(targetUrl),
+        lookupDomain(targetUrl),
+      ]);
+      
+      if (urlResult.status === 'fulfilled') {
+        setUrlScanResult(urlResult.value);
+      }
+      
+      if (domainResult.status === 'fulfilled') {
+        setDomainInfo(domainResult.value);
+      }
+
+      // Combine results into capture object
+      const urlData = urlResult.status === 'fulfilled' ? urlResult.value : null;
+      const domainData = domainResult.status === 'fulfilled' ? domainResult.value : null;
+      
+      // Generate risk flags from real data
+      const realFlags: string[] = [];
+      let realRiskScore = 20;
+      
+      if (urlData) {
+        realFlags.push(...urlData.threats);
+        if (urlData.malicious) {
+          realFlags.push('URL flagged in URLhaus malware database');
+          realRiskScore += 40;
+        }
+        if (urlData.phishing) {
+          realFlags.push('Phishing patterns detected in URL structure');
+          realRiskScore += 25;
+        }
+      }
+      
+      if (domainData) {
+        realFlags.push(...domainData.flags);
+        realRiskScore = Math.max(realRiskScore, domainData.riskScore);
+      }
+
+      setCapture({
+        url: targetUrl,
+        title: domainData?.domain ? `Site: ${domainData.domain}` : 'Unknown Page',
+        scripts: [
+          'analytics.js — Tracking script (checking...)',
+          'Note: JavaScript analysis requires server-side sandboxing',
+        ],
+        links: [
+          `IP: ${domainData?.hosting?.ip || urlData?.ipAddress || 'Unknown'}`,
+          `Country: ${domainData?.registrantCountry || urlData?.country || 'Unknown'}`,
+        ],
+        malwareDetected: urlData?.malicious || (domainData?.riskScore || 0) >= 70,
+        riskScore: Math.min(100, realRiskScore),
+        flags: realFlags.length > 0 ? realFlags : ['No major threats detected — but always verify independently'],
+        timestamp: new Date().toISOString(),
+      });
+      
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Failed to scan URL');
+      // Still show mock data on error
+      setCapture({ ...mockCapture, url: targetUrl, timestamp: new Date().toISOString() });
+    } finally {
       setLoading(false);
       setLoaded(true);
-      setCapture({ ...mockCapture, url: targetUrl, timestamp: new Date().toISOString() });
-    }, 2500);
-  };
+    }
+  }, [url]);
 
   const handleCapture = () => {
     setCaptured(true);
