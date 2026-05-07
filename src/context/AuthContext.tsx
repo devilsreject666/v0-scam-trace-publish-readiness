@@ -30,13 +30,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (data) setProfile(data as Profile);
+  const fetchProfile = async (userId: string, signal?: AbortSignal) => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .abortSignal(signal ?? new AbortController().signal)
+        .single();
+      if (data && !signal?.aborted) setProfile(data as Profile);
+    } catch (err) {
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') return;
+      console.warn('[ScamTrace] Error fetching profile:', err);
+    }
   };
 
   const refreshProfile = async () => {
@@ -44,24 +51,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) fetchProfile(s.user.id);
-      setLoading(false);
-    });
+    let mounted = true;
+    const abortController = new AbortController();
+
+    const initAuth = async () => {
+      try {
+        const { data: { session: s } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        setSession(s);
+        setUser(s?.user ?? null);
+        if (s?.user) await fetchProfile(s.user.id, abortController.signal);
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        console.warn('[ScamTrace] Error initializing auth:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!mounted) return;
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        fetchProfile(s.user.id);
+        fetchProfile(s.user.id, abortController.signal);
       } else {
         setProfile(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      abortController.abort();
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
