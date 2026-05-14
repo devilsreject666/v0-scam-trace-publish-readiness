@@ -4,6 +4,7 @@ import {
   GitBranch, Shuffle, ArrowLeftRight, Landmark, Clock, Shield,
   Loader2, RefreshCw
 } from 'lucide-react';
+import { lookupAddress } from '@/lib/api/blockchain';
 
 interface WalletNode {
   id: string;
@@ -160,15 +161,26 @@ export function TrackerDashboard() {
     'Cardano', 'Cosmos', 'Polkadot', 'Near', 'Base', 'Bitcoin Lightning'
   ];
 
-  const handleScan = useCallback(() => {
-    if (!address.trim()) {
-      setAddress('0x7a250d5630B4cF539739dF2C5dAcb4c659F2488dEad');
-    }
+  const handleScan = useCallback(async () => {
+    const addr = address.trim() || "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488dEad";
+    if (!address.trim()) setAddress(addr);
     setIsScanning(true);
     setScanComplete(false);
     setScanProgress(0);
     setSelectedNode(null);
     setVisibleNodes(0);
+    try {
+      setScanProgress(20);
+      const result = await lookupAddress(addr);
+      setScanProgress(100);
+      setScanComplete(true);
+      console.log("Scan result:", JSON.stringify(result).slice(0, 200));
+      setTimeout(() => setIsScanning(false), 600);
+    } catch (err) {
+      console.error("Scan error:", err);
+      setIsScanning(false);
+      setScanProgress(0);
+    }
   }, [address]);
 
   useEffect(() => {

@@ -46,7 +46,20 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 text-slate-200">
+    <div className="relative min-h-screen text-slate-200 overflow-hidden">
+      {/* Background video */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover z-0 pointer-events-none"
+        src="/bg.mov"
+      />
+      {/* Dark overlay */}
+      <div className="fixed inset-0 z-[1]" style={{background: "rgba(0,0,0,0.6)"}} />
+      {/* Content layer */}
+      <div className="relative z-[2]">
       <Navbar
         onSignIn={() => openAuth('login')}
         onSignUp={() => openAuth('signup')}
@@ -109,10 +122,10 @@ function AppContent() {
         isOpen={demoOpen}
         onClose={() => setDemoOpen(false)}
       />
+      </div>
     </div>
-  );
+    );
 }
-
 export function App() {
   return (
     <AuthProvider>
