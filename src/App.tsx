@@ -24,8 +24,36 @@ import { RequestDemo } from './components/RequestDemo';
 import { LawEnforcement } from './components/LawEnforcement';
 import { CompliancePage } from './components/CompliancePage';
 import { CaseDashboard } from './components/CaseDashboard';
+import { ScamCheckWidget } from './components/ScamCheckWidget';
+import { PdfReportGenerator } from './components/PdfReportGenerator';
+import { ScamDatabase } from './components/ScamDatabase';
+import { Blog } from './components/Blog';
+import { TrustSection } from './components/TrustSection';
+import { MonitoringAlerts } from './components/MonitoringAlerts';
+import { EmailIntelligence } from './components/EmailIntelligence';
+import { ScamPatternMatcher } from './components/ScamPatternMatcher';
+import { AffiliatePage } from './components/AffiliatePage';
+import { WhiteLabelPage } from './components/WhiteLabelPage';
+import { ChromeExtensionPage } from './components/ChromeExtensionPage';
+import {
+  DomainCheckerPage,
+  IpLookupPage,
+  PhoneLookupPage,
+  WalletCheckerPage,
+} from './components/ToolLandingPages';
 
-type Page = 'home' | 'law-enforcement' | 'compliance' | 'dashboard';
+type Page =
+  | 'home'
+  | 'law-enforcement'
+  | 'compliance'
+  | 'dashboard'
+  | 'domain-checker'
+  | 'ip-lookup'
+  | 'phone-lookup'
+  | 'wallet-checker'
+  | 'affiliate'
+  | 'white-label'
+  | 'chrome-extension';
 
 function AppContent() {
   const { user } = useAuth();
@@ -35,6 +63,15 @@ function AppContent() {
   const [demoOpen, setDemoOpen] = useState(false);
   const [page, setPage] = useState<Page>('home');
 
+  // Support hash-based routing for SEO pages
+  if (typeof window !== 'undefined') {
+    const hash = window.location.hash.replace('#', '');
+    const validPages: Page[] = ['domain-checker', 'ip-lookup', 'phone-lookup', 'wallet-checker', 'affiliate', 'white-label', 'chrome-extension'];
+    if (validPages.includes(hash as Page) && page !== hash) {
+      setPage(hash as Page);
+    }
+  }
+
   const openAuth = (mode: 'login' | 'signup') => {
     setAuthMode(mode);
     setAuthOpen(true);
@@ -43,6 +80,13 @@ function AppContent() {
   const navigate = (p: string) => {
     setPage(p as Page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Update hash for SEO pages
+    const seoPages = ['domain-checker', 'ip-lookup', 'phone-lookup', 'wallet-checker', 'affiliate', 'white-label', 'chrome-extension'];
+    if (seoPages.includes(p)) {
+      window.history.pushState(null, '', `#${p}`);
+    } else {
+      window.history.pushState(null, '', window.location.pathname);
+    }
   };
 
   return (
@@ -54,11 +98,10 @@ function AppContent() {
         onNavigate={navigate}
       />
 
+      {/* ── Sub-pages ── */}
+
       {page === 'law-enforcement' && (
-        <LawEnforcement
-          onRequestDemo={() => setDemoOpen(true)}
-          onBack={() => navigate('home')}
-        />
+        <LawEnforcement onRequestDemo={() => setDemoOpen(true)} onBack={() => navigate('home')} />
       )}
 
       {page === 'compliance' && (
@@ -69,22 +112,59 @@ function AppContent() {
         <CaseDashboard />
       )}
 
+      {page === 'domain-checker' && (
+        <DomainCheckerPage onBack={() => navigate('home')} onSignUp={() => openAuth('signup')} />
+      )}
+
+      {page === 'ip-lookup' && (
+        <IpLookupPage onBack={() => navigate('home')} onSignUp={() => openAuth('signup')} />
+      )}
+
+      {page === 'phone-lookup' && (
+        <PhoneLookupPage onBack={() => navigate('home')} onSignUp={() => openAuth('signup')} />
+      )}
+
+      {page === 'wallet-checker' && (
+        <WalletCheckerPage onBack={() => navigate('home')} onSignUp={() => openAuth('signup')} />
+      )}
+
+      {page === 'affiliate' && (
+        <AffiliatePage onBack={() => navigate('home')} onSignUp={() => openAuth('signup')} />
+      )}
+
+      {page === 'white-label' && (
+        <WhiteLabelPage onBack={() => navigate('home')} onContact={() => openAuth('signup')} />
+      )}
+
+      {page === 'chrome-extension' && (
+        <ChromeExtensionPage onBack={() => navigate('home')} onSignUp={() => openAuth('signup')} />
+      )}
+
+      {/* ── Home Page ── */}
       {page === 'home' && (
         <main>
           <Hero onGetStarted={() => user ? navigate('dashboard') : openAuth('signup')} />
+          <ScamCheckWidget onSignUp={() => openAuth('signup')} />
           <Features />
+          <ScamDatabase onSignUp={() => openAuth('signup')} />
           <CaseStudies />
           <TrackerDashboard />
           <ScamSubmission />
           <ChatEvidencePortal />
-          <InvestigationTools />
+          <InvestigationTools onSignUp={() => openAuth('signup')} />
+          <EmailIntelligence onSignUp={() => openAuth('signup')} />
+          <ScamPatternMatcher onSignUp={() => openAuth('signup')} />
+          <PdfReportGenerator onSignUp={() => openAuth('signup')} />
+          <MonitoringAlerts onSignUp={() => openAuth('signup')} />
           <NoTraceBrowser />
           <SmartContractEscrow />
           <ScamShieldWallet />
           <MoneyTracker />
           <EvidenceBuilder />
           <AdminDashboard />
+          <TrustSection />
           <Testimonials />
+          <Blog />
           <Pricing onSelectPlan={() => user ? navigate('dashboard') : openAuth('signup')} />
           <FAQ />
         </main>
