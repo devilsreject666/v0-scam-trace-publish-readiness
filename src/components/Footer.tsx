@@ -89,17 +89,22 @@ export function Footer({ onOpenPrivacy, onOpenTerms, onNavigate }: FooterProps) 
             <ul className="space-y-3">
               {[
                 { label: 'Live Monitor', href: '#tracker' },
-                { label: 'Report a Scam', href: '#submit-report' },
-                { label: 'Chat Evidence Portal', href: '#chat-evidence' },
-                { label: 'Domain Checker', href: '#osint-tools' },
-                { label: 'Phone Lookup', href: '#osint-tools' },
-                { label: 'No-Trace Browser', href: '#safe-browser' },
-                { label: 'Smart Contract Escrow', href: '#escrow' },
-                { label: 'ScamTrace Wallet', href: '#scam-wallet' },
-                { label: 'Evidence Vault', href: '#evidence' },
+                { label: 'Free Scam Check', href: '#free-check' },
+                { label: 'Domain Checker', page: 'domain-checker' },
+                { label: 'IP Lookup', page: 'ip-lookup' },
+                { label: 'Phone Lookup', page: 'phone-lookup' },
+                { label: 'Wallet Checker', page: 'wallet-checker' },
+                { label: 'Email Intelligence', href: '#email-intelligence' },
+                { label: 'Pattern Matcher', href: '#pattern-matcher' },
+                { label: 'Evidence PDF', href: '#evidence-report' },
+                { label: 'Scam Database', href: '#scam-database' },
+                { label: 'Monitoring Alerts', href: '#monitoring' },
               ].map(link => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-sm text-slate-400 transition-all duration-200 hover:text-[#00f5ff] hover:translate-x-1 inline-block">{link.label}</a>
+                  {'page' in link && link.page
+                    ? <button onClick={() => onNavigate?.(link.page!)} className="text-sm text-slate-400 transition-all duration-200 hover:text-[#00f5ff] hover:translate-x-1 text-left">{link.label}</button>
+                    : <a href={link.href} className="text-sm text-slate-400 transition-all duration-200 hover:text-[#00f5ff] hover:translate-x-1 inline-block">{link.label}</a>
+                  }
                 </li>
               ))}
             </ul>
@@ -109,9 +114,20 @@ export function Footer({ onOpenPrivacy, onOpenTerms, onNavigate }: FooterProps) 
           <div>
             <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#00f5ff] [text-shadow:0_0_8px_rgba(0,245,255,0.5)] mb-5">Resources</h4>
             <ul className="space-y-3">
-              {['Documentation', 'API Reference', 'Blog', 'Case Studies', 'Tutorials', 'Community Forum'].map(link => (
-                <li key={link}>
-                  <a href="#" className="text-sm text-slate-400 transition-all duration-200 hover:text-[#00f5ff] hover:translate-x-1 inline-block">{link}</a>
+              {[
+                { label: 'Blog', href: '#blog' },
+                { label: 'Scam Database', href: '#scam-database' },
+                { label: 'Chrome Extension', page: 'chrome-extension' },
+                { label: 'API Reference', href: '#' },
+                { label: 'Case Studies', href: '#' },
+                { label: 'Tutorials', href: '#' },
+                { label: 'Community Forum', href: '#' },
+              ].map(link => (
+                <li key={link.label}>
+                  {'page' in link && link.page
+                    ? <button onClick={() => onNavigate?.(link.page!)} className="text-sm text-slate-400 transition-all duration-200 hover:text-[#00f5ff] hover:translate-x-1 text-left">{link.label}</button>
+                    : <a href={link.href} className="text-sm text-slate-400 transition-all duration-200 hover:text-[#00f5ff] hover:translate-x-1 inline-block">{link.label}</a>
+                  }
                 </li>
               ))}
             </ul>
@@ -133,6 +149,16 @@ export function Footer({ onOpenPrivacy, onOpenTerms, onNavigate }: FooterProps) 
                 </button>
               </li>
               <li>
+                <button onClick={() => onNavigate?.('affiliate')} className="text-sm text-slate-400 hover:text-[#00f5ff] transition-all duration-200 text-left hover:translate-x-1">
+                  Affiliate Program
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate?.('white-label')} className="text-sm text-slate-400 hover:text-[#00f5ff] transition-all duration-200 text-left hover:translate-x-1">
+                  White-Label Licensing
+                </button>
+              </li>
+              <li>
                 <button onClick={onOpenPrivacy} className="text-sm text-slate-400 hover:text-[#00f5ff] transition-all duration-200 text-left hover:translate-x-1">
                   Privacy Policy
                 </button>
@@ -142,7 +168,7 @@ export function Footer({ onOpenPrivacy, onOpenTerms, onNavigate }: FooterProps) 
                   Terms of Service
                 </button>
               </li>
-              <li><a href="mailto:contact@scamtrace.com" className="text-sm text-slate-400 hover:text-[#00f5ff] transition-all duration-200 hover:translate-x-1 inline-block">Contact</a></li>
+              <li><a href="mailto:contact@scamtrace.store" className="text-sm text-slate-400 hover:text-[#00f5ff] transition-all duration-200 hover:translate-x-1 inline-block">Contact</a></li>
             </ul>
           </div>
         </div>
