@@ -244,6 +244,43 @@ export function Pricing({ onSelectPlan }: PricingProps) {
           ))}
         </div>
 
+        {/* Pay-per-report card */}
+        <div className="mt-10 glass-card-static rounded-2xl border border-[rgba(191,0,255,0.2)] p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
+          <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#bf00ff] to-[#ff00aa] flex items-center justify-center"
+            style={{ boxShadow: '0 0 25px rgba(191,0,255,0.4)' }}>
+            <Star className="h-7 w-7 text-white" />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 mb-1">
+              <h3 className="text-lg font-bold text-white font-[Orbitron,sans-serif]">Pay-Per-Report</h3>
+              <span className="text-xs bg-[rgba(191,0,255,0.15)] text-[#bf00ff] border border-[rgba(191,0,255,0.3)] px-2 py-0.5 rounded-full font-semibold">No Subscription</span>
+            </div>
+            <p className="text-slate-400 text-sm">
+              Need one court-ready evidence PDF? Pay once, no subscription required. Includes complete blockchain trace, OSINT findings, exchange contact letters, and law enforcement submission format.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-2">
+              {['Blockchain trace included', 'Exchange freeze letter', 'IC3/FBI compatible', 'Tamper-evident PDF'].map(f => (
+                <span key={f} className="text-xs text-slate-400 flex items-center gap-1">
+                  <Check className="h-3 w-3 text-[#00ff88]" />{f}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="text-center md:text-right flex-shrink-0">
+            <div className="text-3xl font-extrabold text-white font-[Orbitron,sans-serif] mb-1" style={{ textShadow: '0 0 20px rgba(191,0,255,0.4)' }}>
+              $49
+            </div>
+            <p className="text-slate-500 text-xs mb-3">one-time per case</p>
+            <button
+              onClick={() => { setSelectedPlan({ productId: 'report', name: 'Evidence Report' }); setCheckoutOpen(true); }}
+              className="px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #bf00ff, #ff00aa)', boxShadow: '0 0 20px rgba(191,0,255,0.35)' }}
+            >
+              Generate Report — $49
+            </button>
+          </div>
+        </div>
+
         {/* Trust footer */}
         <div className="mt-12 flex flex-col items-center gap-6">
           <div className="glass-card-static rounded-2xl px-8 py-5 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400">
