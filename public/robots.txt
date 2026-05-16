@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://scamtrace.store/sitemap.xml
+
+# Block admin/auth routes
+Disallow: /api/
+Disallow: /dashboard/
