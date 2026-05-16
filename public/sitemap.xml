@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  <!-- Core -->
+  <url><loc>https://scamtrace.store/</loc><lastmod>2026-05-16</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <!-- SEO Tool Landing Pages -->
+  <url><loc>https://scamtrace.store/#domain-checker</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://scamtrace.store/#ip-lookup</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://scamtrace.store/#phone-lookup</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://scamtrace.store/#wallet-checker</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <!-- Platform Sections -->
+  <url><loc>https://scamtrace.store/#free-check</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
+  <url><loc>https://scamtrace.store/#scam-database</loc><lastmod>2026-05-16</lastmod><changefreq>daily</changefreq><priority>0.90</priority></url>
+  <url><loc>https://scamtrace.store/#osint-tools</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.88</priority></url>
+  <url><loc>https://scamtrace.store/#email-intelligence</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.87</priority></url>
+  <url><loc>https://scamtrace.store/#pattern-matcher</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.87</priority></url>
+  <url><loc>https://scamtrace.store/#evidence-report</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://scamtrace.store/#monitoring</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.83</priority></url>
+  <url><loc>https://scamtrace.store/#pricing</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.82</priority></url>
+  <url><loc>https://scamtrace.store/#features</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://scamtrace.store/#tracker</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
+  <!-- Blog Articles -->
+  <url><loc>https://scamtrace.store/#blog</loc><lastmod>2026-05-16</lastmod><changefreq>weekly</changefreq><priority>0.88</priority></url>
+  <url><loc>https://scamtrace.store/#blog/what-is-pig-butchering-scam</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://scamtrace.store/#blog/trace-stolen-cryptocurrency-guide</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://scamtrace.store/#blog/how-to-report-crypto-scam-law-enforcement</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.83</priority></url>
+  <url><loc>https://scamtrace.store/#blog/osint-tools-for-crypto-fraud-investigation</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.82</priority></url>
+  <url><loc>https://scamtrace.store/#blog/romance-scam-recovery-what-to-do</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.82</priority></url>
+  <url><loc>https://scamtrace.store/#blog/crypto-scam-red-flags-checklist</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <!-- Partner & Business -->
+  <url><loc>https://scamtrace.store/#affiliate</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.78</priority></url>
+  <url><loc>https://scamtrace.store/#white-label</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.78</priority></url>
+  <url><loc>https://scamtrace.store/#chrome-extension</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://scamtrace.store/#trust</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.72</priority></url>
+  <url><loc>https://scamtrace.store/#report</loc><lastmod>2026-05-16</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+</urlset>
