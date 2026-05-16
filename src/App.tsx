@@ -46,7 +46,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 text-slate-200">
+    <div className="min-h-screen bg-[#03081a] text-slate-100">
       <Navbar
         onSignIn={() => openAuth('login')}
         onSignUp={() => openAuth('signup')}

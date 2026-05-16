@@ -11,7 +11,9 @@ const plans = [
     monthlyPrice: 0,
     yearlyPrice: 0,
     description: 'Basic monitoring for personal use',
-    color: 'from-slate-400 to-slate-500',
+    gradient: 'from-slate-400 to-slate-500',
+    glowColor: 'rgba(148,163,184,0.25)',
+    borderColor: 'rgba(148,163,184,0.2)',
     features: [
       '3 address scans per day',
       'Basic risk scoring',
@@ -28,7 +30,9 @@ const plans = [
     monthlyPrice: 9,
     yearlyPrice: 7,
     description: 'Evidence templates & basic tools',
-    color: 'from-cyber-green to-emerald-500',
+    gradient: 'from-[#00ff88] to-[#00d4aa]',
+    glowColor: 'rgba(0,255,136,0.25)',
+    borderColor: 'rgba(0,255,136,0.2)',
     features: [
       '25 address scans per day',
       'AI-powered risk analysis',
@@ -48,7 +52,9 @@ const plans = [
     monthlyPrice: 19,
     yearlyPrice: 15,
     description: 'Scam reports & monitoring dashboard',
-    color: 'from-cyber-blue to-blue-400',
+    gradient: 'from-[#00f5ff] to-[#0066ff]',
+    glowColor: 'rgba(0,245,255,0.35)',
+    borderColor: 'rgba(0,245,255,0.35)',
     features: [
       'Unlimited address scans',
       '16+ blockchains (incl. BTC)',
@@ -71,7 +77,9 @@ const plans = [
     monthlyPrice: 49,
     yearlyPrice: 39,
     description: 'Full suite & live monitoring',
-    color: 'from-cyber-purple to-violet-400',
+    gradient: 'from-[#bf00ff] to-[#ff00aa]',
+    glowColor: 'rgba(191,0,255,0.25)',
+    borderColor: 'rgba(191,0,255,0.2)',
     features: [
       'Everything in Pro',
       'Unlimited chat evidence uploads',
@@ -102,7 +110,6 @@ export function Pricing({ onSelectPlan }: PricingProps) {
 
   const handleSelectPlan = (plan: typeof plans[0]) => {
     if (plan.productId === 'free') {
-      // Free plan just signs up
       onSelectPlan?.();
       return;
     }
@@ -112,16 +119,20 @@ export function Pricing({ onSelectPlan }: PricingProps) {
 
   return (
     <section id="pricing" className="relative py-24 grid-bg">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/3 top-0 h-[600px] w-[600px] rounded-full bg-cyber-purple/[0.03] blur-[160px]" />
+      {/* Ambient */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-1/3 top-0 h-[700px] w-[700px] rounded-full bg-[rgba(191,0,255,0.04)] blur-[180px]" />
+        <div className="absolute right-1/4 bottom-0 h-[500px] w-[500px] rounded-full bg-[rgba(0,245,255,0.03)] blur-[150px]" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="section-divider mb-0" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-6">
         <div className="mb-16 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyber-purple/20 bg-cyber-purple/[0.06] px-4 py-1.5">
-            <span className="text-xs font-medium text-cyber-purple">Subscription Plans</span>
+          <div className="mb-4 badge-neon-purple inline-flex items-center gap-2">
+            <span>Subscription Plans</span>
           </div>
-          <h2 className="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
+          <h2 className="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl heading-3d">
             Choose Your <span className="gradient-text">Plan</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-400">
@@ -129,22 +140,26 @@ export function Pricing({ onSelectPlan }: PricingProps) {
           </p>
 
           {/* Billing toggle */}
-          <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-white/10 bg-dark-800/80 p-1.5 backdrop-blur">
+          <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-[rgba(0,245,255,0.15)] bg-[rgba(2,5,16,0.8)] p-1.5 backdrop-blur-xl">
             <button
-              className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-                !yearly ? 'bg-white/10 text-white shadow-lg' : 'text-slate-400 hover:text-slate-300'
+              className={`rounded-full px-6 py-2 text-sm font-semibold transition-all duration-300 ${
+                !yearly
+                  ? 'bg-[rgba(0,245,255,0.1)] text-[#00f5ff] border border-[rgba(0,245,255,0.25)] shadow-[0_0_15px_rgba(0,245,255,0.15)]'
+                  : 'text-slate-400 hover:text-slate-300'
               }`}
               onClick={() => setYearly(false)}
             >
               Monthly
             </button>
             <button
-              className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-                yearly ? 'bg-gradient-to-r from-cyber-green to-cyber-blue text-dark-900 shadow-lg shadow-cyber-green/20' : 'text-slate-400 hover:text-slate-300'
+              className={`rounded-full px-6 py-2 text-sm font-semibold transition-all duration-300 ${
+                yearly
+                  ? 'btn-primary shadow-[0_0_20px_rgba(0,245,255,0.3)]'
+                  : 'text-slate-400 hover:text-slate-300'
               }`}
               onClick={() => setYearly(true)}
             >
-              Yearly <span className="ml-1 rounded-full bg-dark-900/30 px-2 py-0.5 text-[10px] font-bold">{'−20%'}</span>
+              Yearly <span className="ml-1.5 rounded-full bg-[rgba(0,0,0,0.3)] px-2 py-0.5 text-[10px] font-bold tracking-wider">−20%</span>
             </button>
           </div>
         </div>
@@ -152,36 +167,50 @@ export function Pricing({ onSelectPlan }: PricingProps) {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {plans.map(plan => (
             <div key={plan.name}
-              className={`relative glass-card-premium rounded-2xl p-6 flex flex-col ${
-                plan.popular ? 'ring-2 ring-cyber-green/30 bg-cyber-green/[0.02]' : ''
+              className={`relative flex flex-col rounded-2xl p-6 transition-all duration-500 glass-card-3d ${
+                plan.popular
+                  ? 'pricing-card-featured'
+                  : 'glass-card-premium'
               }`}
+              style={{
+                boxShadow: plan.popular
+                  ? `0 0 40px ${plan.glowColor}, 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(0,245,255,0.15)`
+                  : `0 0 20px ${plan.glowColor}30, 0 10px 30px rgba(0,0,0,0.4)`,
+              }}
             >
+              {/* Popular badge */}
               {plan.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-cyber-green to-cyber-blue px-5 py-1.5 text-xs font-bold text-dark-900 shadow-lg shadow-cyber-green/20">
-                  {'★ Most Popular'}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                  <div className="rounded-full bg-gradient-to-r from-[#00f5ff] to-[#0066ff] px-5 py-1.5 text-xs font-bold text-[#020510] shadow-[0_0_20px_rgba(0,245,255,0.5)] tracking-wider uppercase whitespace-nowrap">
+                    ★ Most Popular
+                  </div>
                 </div>
               )}
 
-              <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${plan.color} shadow-lg`}>
-                <plan.icon className="h-5 w-5 text-dark-900" strokeWidth={2.5} />
+              {/* Icon */}
+              <div className={`mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${plan.gradient} shadow-lg`}
+                style={{ boxShadow: `0 0 20px ${plan.glowColor}, 0 4px 15px rgba(0,0,0,0.4)` }}>
+                <plan.icon className="h-6 w-6 text-[#020510]" strokeWidth={2.5} />
               </div>
 
-              <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+              <h3 className="text-xl font-bold text-white font-[Orbitron,sans-serif] tracking-wider">{plan.name}</h3>
               <p className="mt-1 text-sm text-slate-400">{plan.description}</p>
 
+              {/* Price */}
               <div className="my-6">
                 {plan.monthlyPrice === 0 ? (
-                  <div className="text-3xl font-extrabold text-white">
+                  <div className="text-4xl font-extrabold text-white font-[Orbitron,sans-serif] [text-shadow:0_0_20px_rgba(148,163,184,0.3)]">
                     $0<span className="text-base font-normal text-slate-400">/mo</span>
                   </div>
                 ) : (
                   <>
-                    <div className="text-3xl font-extrabold text-white">
+                    <div className="text-4xl font-extrabold font-[Orbitron,sans-serif]"
+                      style={{ color: plan.popular ? '#00f5ff' : '#fff', textShadow: `0 0 20px ${plan.glowColor}` }}>
                       ${yearly ? plan.yearlyPrice : plan.monthlyPrice}
                       <span className="text-base font-normal text-slate-400">/mo</span>
                     </div>
                     {yearly && (
-                      <div className="mt-1 text-xs text-cyber-green">
+                      <div className="mt-1.5 text-xs font-semibold" style={{ color: plan.popular ? '#00ff88' : 'rgba(0,255,136,0.7)' }}>
                         Save ${(plan.monthlyPrice - plan.yearlyPrice) * 12}/year
                       </div>
                     )}
@@ -189,21 +218,24 @@ export function Pricing({ onSelectPlan }: PricingProps) {
                 )}
               </div>
 
+              {/* Features */}
               <ul className="mb-8 flex-grow space-y-3">
                 {plan.features.map(f => (
                   <li key={f} className="flex items-start gap-2.5 text-sm text-slate-300">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-cyber-green" />
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#00ff88]"
+                      style={{ filter: 'drop-shadow(0 0 4px rgba(0,255,136,0.6))' }} />
                     {f}
                   </li>
                 ))}
               </ul>
 
+              {/* CTA */}
               <button
                 onClick={() => handleSelectPlan(plan)}
-                className={`w-full rounded-xl py-3 text-sm font-bold transition-all ${
+                className={`w-full rounded-xl py-3.5 text-sm font-bold transition-all duration-300 tracking-wide ${
                   plan.popular
-                    ? 'btn-primary shadow-lg'
-                    : 'border border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20'
+                    ? 'btn-primary shadow-[0_0_25px_rgba(0,245,255,0.35)]'
+                    : 'border border-[rgba(0,245,255,0.15)] bg-[rgba(0,245,255,0.05)] text-[#00f5ff] hover:bg-[rgba(0,245,255,0.1)] hover:border-[rgba(0,245,255,0.3)] hover:shadow-[0_0_15px_rgba(0,245,255,0.15)]'
                 }`}
               >
                 {plan.cta}
@@ -214,23 +246,18 @@ export function Pricing({ onSelectPlan }: PricingProps) {
 
         {/* Trust footer */}
         <div className="mt-12 flex flex-col items-center gap-6">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <CreditCard className="h-3.5 w-3.5" />
-              No credit card for free trial
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5" />
-              Secured by Stripe
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Smartphone className="h-3.5 w-3.5" />
-              {'iOS & Android ready'}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5" />
-              Cancel anytime
-            </div>
+          <div className="glass-card-static rounded-2xl px-8 py-5 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400">
+            {[
+              { icon: CreditCard, label: 'No credit card for free trial' },
+              { icon: Lock, label: 'Secured by Stripe' },
+              { icon: Smartphone, label: 'iOS & Android ready' },
+              { icon: Shield, label: 'Cancel anytime' },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-2 text-slate-400 hover:text-[#00f5ff] transition-colors duration-200">
+                <Icon className="h-4 w-4 text-[#00f5ff]" style={{ filter: 'drop-shadow(0 0 4px rgba(0,245,255,0.5))' }} />
+                {label}
+              </div>
+            ))}
           </div>
           <p className="text-center text-xs text-slate-600 max-w-lg">
             All plans include a 14-day free trial. Subscriptions managed through Stripe.
@@ -240,7 +267,6 @@ export function Pricing({ onSelectPlan }: PricingProps) {
         <Disclaimer className="mt-12" />
       </div>
 
-      {/* Stripe Checkout Modal */}
       {selectedPlan && (
         <StripeCheckout
           isOpen={checkoutOpen}
@@ -253,6 +279,8 @@ export function Pricing({ onSelectPlan }: PricingProps) {
           yearly={yearly}
         />
       )}
+
+      <div className="section-divider mt-24" />
     </section>
   );
 }
