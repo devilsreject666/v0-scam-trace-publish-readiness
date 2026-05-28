@@ -213,22 +213,24 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                 )}
 
                 {mode === 'signup' && (
-                  <label className="flex items-start gap-3 cursor-pointer select-none group">
+                  <div 
+                    className="flex items-start gap-3 cursor-pointer select-none group"
+                    onClick={() => setAgreedTerms(!agreedTerms)}
+                  >
                     <div className="relative flex-shrink-0 mt-0.5">
-                      <input 
-                        type="checkbox" 
-                        checked={agreedTerms} 
-                        onChange={e => setAgreedTerms(e.target.checked)}
-                        className="peer sr-only" 
-                      />
-                      <div className="h-5 w-5 rounded border-2 border-white/20 bg-dark-900 transition-all peer-checked:border-cyber-green peer-checked:bg-cyber-green/20 group-hover:border-white/40 peer-focus:ring-2 peer-focus:ring-cyber-green/50" />
-                      <CheckCircle2 className="absolute inset-0 h-5 w-5 text-cyber-green opacity-0 peer-checked:opacity-100 transition-opacity p-0.5" />
+                      <div className={`h-5 w-5 rounded border-2 transition-all flex items-center justify-center ${
+                        agreedTerms 
+                          ? 'border-cyber-green bg-cyber-green/20' 
+                          : 'border-white/20 bg-dark-900 group-hover:border-white/40'
+                      }`}>
+                        {agreedTerms && <CheckCircle2 className="h-4 w-4 text-cyber-green" />}
+                      </div>
                     </div>
                     <span className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors">
                       I agree to the <span className="text-cyber-green hover:underline">Terms of Service</span> and{' '}
                       <span className="text-cyber-green hover:underline">Privacy Policy</span>. My data is encrypted end-to-end.
                     </span>
-                  </label>
+                  </div>
                 )}
 
                 <button type="submit" disabled={loading}
