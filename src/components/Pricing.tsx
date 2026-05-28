@@ -1,4 +1,4 @@
-import { Check, Zap, Shield, Crown, Star, Lock, CreditCard, Smartphone } from 'lucide-react';
+import { Check, Zap, Shield, Crown, Star, Lock, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { Disclaimer } from './Disclaimer';
 import { StripeCheckout } from './StripeCheckout';
@@ -42,7 +42,7 @@ const plans = [
       '1 phone lookup per day',
       'Email support',
     ],
-    cta: 'Start 14-Day Free Trial',
+    cta: 'Get Started',
     popular: false,
   },
   {
@@ -67,7 +67,7 @@ const plans = [
       'Evidence exports',
       'Priority support',
     ],
-    cta: 'Start 14-Day Free Trial',
+    cta: 'Subscribe Now',
     popular: true,
   },
   {
@@ -285,7 +285,6 @@ export function Pricing({ onSelectPlan }: PricingProps) {
         <div className="mt-12 flex flex-col items-center gap-6">
           <div className="glass-card-static rounded-2xl px-8 py-5 flex flex-wrap items-center justify-center gap-8 text-xs text-slate-400">
             {[
-              { icon: CreditCard, label: 'No credit card for free trial' },
               { icon: Lock, label: 'Secured by Stripe' },
               { icon: Smartphone, label: 'iOS & Android ready' },
               { icon: Shield, label: 'Cancel anytime' },
@@ -297,7 +296,7 @@ export function Pricing({ onSelectPlan }: PricingProps) {
             ))}
           </div>
           <p className="text-center text-xs text-slate-600 max-w-lg">
-            All plans include a 14-day free trial. Subscriptions managed through Stripe.
+            Subscriptions managed through Stripe. Cancel anytime.
           </p>
         </div>
 
